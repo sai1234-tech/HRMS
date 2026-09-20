@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Employee Details</title>
+
+    <link
+        rel="stylesheet"
+        href="/css/style.css"
+    >
+
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="header">
+
+        <div>
+
+            <h1>
+                <%= employee.firstName %>
+                <%= employee.lastName || "" %>
+            </h1>
+
+            <p>
+                <%= employee.employeeCode %>
+            </p>
+
+        </div>
+
+        <div>
+
+            <a
+                href="/employees/<%= employee._id %>/edit"
+                class="btn btn-edit"
+            >
+                Edit
+            </a>
+
+            <a
+                href="/employees"
+                class="btn btn-secondary"
+            >
+                Back
+            </a>
+
+        </div>
+
+    </div>
+
+
+    <div class="card">
+
+        <h2>Personal Information</h2>
+
+        <div class="details-grid">
+
+            <div>
+
+                <strong>Employee Code</strong>
+
+                <p>
+                    <%= employee.employeeCode %>
+                </p>
+
+            </div>
+
+
+            <div>
+
+                <strong>Name</strong>
+
+                <p>
+
+                    <%= employee.firstName %>
+
+                    <%= employee.lastName || "" %>
+
+                </p>
+
+            </div>
+
+
+            <div>
+
+                <strong>Email</strong>
+
+                <p>
+                    <%= employee.email %>
+                </p>
+
+            </div>
+
+
+            <div>
+
+                <strong>Phone</strong>
+
+                <p>
+                    <%= employee.phone || "-" %>
+                </p>
+
+            </div>
+
+
+            <div>
+
+                <strong>Gender</strong>
+
+                <p>
+                    <%= employee.personal?.gender || "-" %>
+                </p>
+
+            </div>
+
+
+            <div>
+
+                <strong>Date of Birth</strong>
+
+                <p>
+
+                    <%= employee.personal?.dateOfBirth
+                        ? new Date(
+                            employee.personal.dateOfBirth
+                          ).toLocaleDateString("en-IN")
+                        : "-"
+                    %>
+
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="card">
+
+        <h2>Employment Information</h2>
+
+        <div class="details-grid">
+
+            <div>
+
+                <strong>Department</strong>
+
+                <p>
+                    <%= employee.employment?.department || "-" %>
+                </p>
+
+            </div>
+
+
+            <div>
+
+                <strong>Designation</strong>
+
+                <p>
+                    <%= employee.employment?.designation || "-" %>
+                </p>
+
+            </div>
+
+
+            <div>
+
+                <strong>Joining Date</strong>
+
+                <p>
+
+                    <%= employee.employment?.joiningDate
+                        ? new Date(
+                            employee.employment.joiningDate
+                          ).toLocaleDateString("en-IN")
+                        : "-"
+                    %>
+
+                </p>
+
+            </div>
+
+
+            <div>
+
+                <strong>Employment Type</strong>
+
+                <p>
+                    <%= employee.employment?.employmentType || "-" %>
+                </p>
+
+            </div>
+
+
+            <div>
+
+                <strong>Salary</strong>
+
+                <p>
+
+                    ₹<%= Number(
+                        employee.employment?.salary || 0
+                    ).toLocaleString("en-IN") %>
+
+                </p>
+
+            </div>
+
+
+            <div>
+
+                <strong>Status</strong>
+
+                <p>
+
+                    <span
+                        class="status <%= employee.employment?.status?.toLowerCase() %>"
+                    >
+                        <%= employee.employment?.status %>
+                    </span>
+
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="card">
+
+        <h2>Address</h2>
+
+        <div class="details-grid">
+
+            <div class="full">
+
+                <strong>Address</strong>
+
+                <p>
+                    <%= employee.address?.addressLine || "-" %>
+                </p>
+
+            </div>
+
+
+            <div>
+
+                <strong>City</strong>
+
+                <p>
+                    <%= employee.address?.city || "-" %>
+                </p>
+
+            </div>
+
+
+            <div>
+
+                <strong>State</strong>
+
+                <p>
+                    <%= employee.address?.state || "-" %>
+                </p>
+
+            </div>
+
+
+            <div>
+
+                <strong>Country</strong>
+
+                <p>
+                    <%= employee.address?.country || "-" %>
+                </p>
+
+            </div>
+
+
+            <div>
+
+                <strong>Postal Code</strong>
+
+                <p>
+                    <%= employee.address?.postalCode || "-" %>
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="card">
+
+        <h2>Emergency Contact</h2>
+
+        <div class="details-grid">
+
+            <div>
+
+                <strong>Name</strong>
+
+                <p>
+                    <%= employee.emergencyContact?.name || "-" %>
+                </p>
+
+            </div>
+
+
+            <div>
+
+                <strong>Phone</strong>
+
+                <p>
+                    <%= employee.emergencyContact?.phone || "-" %>
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+
+</html>

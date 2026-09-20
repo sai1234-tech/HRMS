@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Edit Employee</title>
+
+    <link
+        rel="stylesheet"
+        href="/css/style.css"
+    >
+
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="header">
+
+        <h1>Edit Employee</h1>
+
+        <div>
+
+            <a
+                href="/employees/<%= employee._id %>"
+                class="btn btn-view"
+            >
+                View
+            </a>
+
+            <a
+                href="/employees"
+                class="btn btn-secondary"
+            >
+                Back
+            </a>
+
+        </div>
+
+    </div>
+
+
+    <% if (errors.length > 0) { %>
+
+        <div class="alert">
+
+            <ul>
+
+                <% errors.forEach(error => { %>
+
+                    <li>
+                        <%= error %>
+                    </li>
+
+                <% }); %>
+
+            </ul>
+
+        </div>
+
+    <% } %>
+
+
+    <div class="card">
+
+        <form
+            action="/employees/<%= employee._id %>?_method=PUT"
+            method="POST"
+        >
+
+            <h2>Personal Information</h2>
+
+            <div class="form-grid">
+
+                <div class="form-group">
+
+                    <label>Employee Code *</label>
+
+                    <input
+                        type="text"
+                        name="employeeCode"
+                        value="<%= employee.employeeCode %>"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label>First Name *</label>
+
+                    <input
+                        type="text"
+                        name="firstName"
+                        value="<%= employee.firstName %>"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label>Last Name</label>
+
+                    <input
+                        type="text"
+                        name="lastName"
+                        value="<%= employee.lastName || '' %>"
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label>Email *</label>
+
+                    <input
+                        type="email"
+                        name="email"
+                        value="<%= employee.email %>"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label>Phone</label>
+
+                    <input
+                        type="text"
+                        name="phone"
+                        value="<%= employee.phone || '' %>"
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label>Gender</label>
+
+                    <select name="gender">
+
+                        <option value="">
+                            Select
+                        </option>
+
+                        <option
+                            value="Male"
+                            <%= employee.personal?.gender === "Male"
+                                ? "selected"
+                                : "" %>
+                        >
+                            Male
+                        </option>
+
+                        <option
+                            value="Female"
+                            <%= employee.personal?.gender === "Female"
+                                ? "selected"
+                                : "" %>
+                        >
+                            Female
+                        </option>
+
+                        <option
+                            value="Other"
+                            <%= employee.personal?.gender === "Other"
+                                ? "selected"
+                                : "" %>
+                        >
+                            Other
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label>Date of Birth</label>
+
+                    <input
+                        type="date"
+                        name="dateOfBirth"
+                        value="<%= employee.personal?.dateOfBirth
+                            ? new Date(employee.personal.dateOfBirth)
+                                .toISOString()
+                                .substring(0, 10)
+                            : '' %>"
+                    >
+
+                </div>
+
+            </div>
+
+
+            <h2>Employment Information</h2>
+
+            <div class="form-grid">
+
+                <div class="form-group">
+
+                    <label>Department</label>
+
+                    <select name="department">
+
+                        <% const departments = [
+                            "HR",
+                            "IT",
+                            "Finance",
+                            "Sales",
+                            "Marketing",
+                            "Operations"
+                        ]; %>
+
+                        <option value="">
+                            Select Department
+                        </option>
+
+                        <% departments.forEach(department => { %>
+
+                            <option
+                                value="<%= department %>"
+                                <%= employee.employment?.department === department
+                                    ? "selected"
+                                    : "" %>
+                            >
+                                <%= department %>
+                            </option>
+
+                        <% }); %>
+
+                    </select>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label>Designation</label>
+
+                    <input
+                        type="text"
+                        name="designation"
+                        value="<%= employee.employment?.designation || '' %>"
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label>Joining Date *</label>
+
+                    <input
+                        type="date"
+                        name="joiningDate"
+                        value="<%= employee.employment?.joiningDate
+                            ? new Date(employee.employment.joiningDate)
+                                .toISOString()
+                                .substring(0, 10)
+                            : '' %>"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label>Employment Type</label>
+
+                    <select name="employmentType">
+
+                        <% const types = [
+                            "Full Time",
+                            "Part Time",
+                            "Contract",
+                            "Intern"
+                        ]; %>
+
+                        <% types.forEach(type => { %>
+
+                            <option
+                                value="<%= type %>"
+                                <%= employee.employment?.employmentType === type
+                                    ? "selected"
+                                    : "" %>
+                            >
+                                <%= type %>
+                            </option>
+
+                        <% }); %>
+
+                    </select>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label>Salary</label>
+
+                    <input
+                        type="number"
+                        name="salary"
+                        min="0"
+                        step="0.01"
+                        value="<%= employee.employment?.salary || 0 %>"
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label>Status</label>
+
+                    <select name="status">
+
+                        <% const statuses = [
+                            "Active",
+                            "Inactive",
+                            "Terminated"
+                        ]; %>
+
+                        <% statuses.forEach(status => { %>
+
+                            <option
+                                value="<%= status %>"
+                                <%= employee.employment?.status === status
+                                    ? "selected"
+                                    : "" %>
+                            >
+                                <%= status %>
+                            </option>
+
+                        <% }); %>
+
+                    </select>
+
+                </div>
+
+            </div>
+
+
+            <h2>Address</h2>
+
+            <div class="form-grid">
+
+                <div class="form-group full">
+
+                    <label>Address</label>
+
+                    <textarea
+                        name="addressLine"
+                    ><%= employee.address?.addressLine || '' %></textarea>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label>City</label>
+
+                    <input
+                        type="text"
+                        name="city"
+                        value="<%= employee.address?.city || '' %>"
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label>State</label>
+
+                    <input
+                        type="text"
+                        name="state"
+                        value="<%= employee.address?.state || '' %>"
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label>Country</label>
+
+                    <input
+                        type="text"
+                        name="country"
+                        value="<%= employee.address?.country || 'India' %>"
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label>Postal Code</label>
+
+                    <input
+                        type="text"
+                        name="postalCode"
+                        value="<%= employee.address?.postalCode || '' %>"
+                    >
+
+                </div>
+
+            </div>
+
+
+            <h2>Emergency Contact</h2>
+
+            <div class="form-grid">
+
+                <div class="form-group">
+
+                    <label>Contact Name</label>
+
+                    <input
+                        type="text"
+                        name="emergencyContactName"
+                        value="<%= employee.emergencyContact?.name || '' %>"
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label>Contact Phone</label>
+
+                    <input
+                        type="text"
+                        name="emergencyContactPhone"
+                        value="<%= employee.emergencyContact?.phone || '' %>"
+                    >
+
+                </div>
+
+            </div>
+
+
+            <div class="form-actions">
+
+                <button
+                    type="submit"
+                    class="btn btn-primary"
+                >
+                    Update Employee
+                </button>
+
+                <a
+                    href="/employees/<%= employee._id %>"
+                    class="btn btn-secondary"
+                >
+                    Cancel
+                </a>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+</body>
+
+</html>

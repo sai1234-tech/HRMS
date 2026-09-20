@@ -1,0 +1,341 @@
+import { useState, useEffect, useRef, useMemo } from "react";
+import { Link, useLocation } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
+import { useSidebar } from "../../context/SidebarContext";
+import { getEmployee } from "../../services/employeeService";
+import { normalizeRole } from "../../utils/auth";
+import HeaderEmployeeSearch from "./HeaderEmployeeSearch";
+import "./EmployeeHeader.css";
+
+const formatPhotoUrl = (photo) => {
+  if (!photo) return "";
+  if (/^https?:\/\//i.test(photo) || photo.startsWith("blob:") || photo.startsWith("data:")) return photo;
+
+  const apiUrl = (
+    String(import.meta.env.VITE_API_URL || "").replace("localhost", "127.0.0.1") ||
+    "/"
+  ).replace(/\/$/, "");
+
+  const cleanPhoto = String(photo).replace(/\\/g, "/").replace(/^\/?api(\/v1)?\/?/, "");
+  return `${apiUrl.replace(/\/api(\/v1)?\/?$/, "")}${cleanPhoto.startsWith("/") ? cleanPhoto : `/${cleanPhoto}`}`;
+};
+
+// Route breadcrumb dictionary
+const ROUTE_CONTEXT_MAP = {
+  "/employee/dashboard": { section: "Workspace", title: "Overview" },
+  "/employee/attendance": { section: "Time & Attendance", title: "Daily Attendance" },
+  "/employee/leaves": { section: "Time Off", title: "Leaves & WFH Hub" },
+  "/employee/timesheets": { section: "Timesheets", title: "Project Logs" },
+  "/employee/payroll": { section: "Finance", title: "My Payroll" },
+  "/employee/documents": { section: "Records", title: "Document Vault" },
+  "/employee/profile": { section: "Personal", title: "My Profile" },
+  "/organization": { section: "Enterprise", title: "Org Hierarchy & Tree" },
+  "/employee/organization": { section: "Enterprise", title: "Org Hierarchy" },
+  "/hr/dashboard": { section: "HR Command", title: "Dashboard" },
+  "/hr/employees": { section: "Workforce", title: "Employees" },
+  "/hr/departments": { section: "Structure", title: "Departments" },
+  "/hr/organization": { section: "Enterprise", title: "Org Hierarchy" },
+  "/hr/timesheets": { section: "Operations", title: "Timesheets" },
+  "/hr/payroll": { section: "Operations", title: "Payroll Run" },
+  "/hr/documents": { section: "Vault", title: "Company Documents" },
+  "/admin/dashboard": { section: "Admin", title: "Executive Command" },
+  "/admin/accounts": { section: "Security", title: "User Accounts" },
+};
+
+function EmployeeHeader() {
+  const { user, employee, logout } = useAuth();
+  const { isCollapsed, toggleSidebar } = useSidebar();
+  const location = useLocation();
+
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [currentTime, setCurrentTime] = useState("");
+  const dropdownRef = useRef(null);
+
+  const [headerPhoto, setHeaderPhoto] = useState(() => {
+    return (
+      employee?.profilePhoto ||
+      user?.profilePhoto ||
+      localStorage.getItem("hrms_profile_photo") ||
+      sessionStorage.getItem("hrms_profile_photo") ||
+      ""
+    );
+  });
+
+  // Sync profile photo on change or fetch from server
+  useEffect(() => {
+    const directPhoto = employee?.profilePhoto || user?.profilePhoto;
+    if (directPhoto) {
+      setHeaderPhoto(directPhoto);
+      localStorage.setItem("hrms_profile_photo", directPhoto);
+    } else {
+      const stored = localStorage.getItem("hrms_profile_photo") || sessionStorage.getItem("hrms_profile_photo");
+      if (stored) {
+        setHeaderPhoto(stored);
+      } else {
+        let isMounted = true;
+        getEmployee()
+          .then((res) => {
+            if (!isMounted) return;
+            const empData = res?.employee || res?.data?.employee || res?.user || res;
+            const photo = empData?.profilePhoto;
+            if (photo) {
+              setHeaderPhoto(photo);
+              localStorage.setItem("hrms_profile_photo", photo);
+              sessionStorage.setItem("hrms_profile_photo", photo);
+            }
+          })
+          .catch(() => {});
+        return () => {
+          isMounted = false;
+        };
+      }
+    }
+  }, [employee, user]);
+
+  // Listen for real-time photo updates dispatched from Profile page
+  useEffect(() => {
+    const handlePhotoUpdated = (e) => {
+      const newPhoto =
+        e?.detail?.profilePhoto ||
+        localStorage.getItem("hrms_profile_photo") ||
+        sessionStorage.getItem("hrms_profile_photo");
+      if (newPhoto) {
+        setHeaderPhoto(newPhoto);
+      }
+    };
+
+    window.addEventListener("hrms:profile_photo_updated", handlePhotoUpdated);
+    window.addEventListener("storage", handlePhotoUpdated);
+
+    return () => {
+      window.removeEventListener("hrms:profile_photo_updated", handlePhotoUpdated);
+      window.removeEventListener("storage", handlePhotoUpdated);
+    };
+  }, []);
+
+  const role = normalizeRole(user);
+  const isHr = role === "hr";
+  const isAdmin = role === "admin";
+
+  // Real-time clock update (IST / local)
+  useEffect(() => {
+    const updateTime = () => {
+      const now = new Date();
+      setCurrentTime(
+        new Intl.DateTimeFormat("en-IN", {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: true,
+        }).format(now)
+      );
+    };
+    updateTime();
+    const interval = setInterval(updateTime, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Close notifications dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowNotifications(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Name & Initials calculation
+  const profile = employee || user || {};
+  const displayName =
+    profile.name ||
+    `${profile.firstName || ""} ${profile.lastName || ""}`.trim() ||
+    user?.name ||
+    user?.email?.split("@")[0] ||
+    "User";
+
+  const initials = displayName
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0].toUpperCase())
+    .join("") || "QS";
+
+  const roleLabel = isHr
+    ? "HR Lead"
+    : isAdmin
+    ? "Administrator"
+    : "Employee";
+
+  const currentRouteMeta = useMemo(() => {
+    return ROUTE_CONTEXT_MAP[location.pathname] || { section: "Portal", title: "Quadratic HRMS" };
+  }, [location.pathname]);
+
+  const notifications = [
+    {
+      id: 1,
+      title: "Payroll Statement Verified",
+      desc: "September salary calculation finalized and available for download.",
+      time: "10m ago",
+    },
+    {
+      id: 2,
+      title: "Leave Request Approved",
+      desc: "Upcoming leave has been recorded in the attendance calendar.",
+      time: "2h ago",
+    },
+    {
+      id: 3,
+      title: "Tax Window Active",
+      desc: "New Tax Regime declaration window remains open until month end.",
+      time: "1d ago",
+    },
+  ];
+
+  return (
+    <header className="employee-header" aria-label="Top Application Header">
+      {/* Left: Universal Sidebar Toggle & Breadcrumb / Section Context */}
+      <div className="header-left-cluster">
+        {/* Universal Sidebar Toggle Button (Click to Close / Click to Open) */}
+        <button
+          type="button"
+          className={`header-sidebar-toggle-btn ${isCollapsed ? "is-collapsed" : "is-expanded"}`}
+          onClick={toggleSidebar}
+          title={
+            isCollapsed
+              ? "Open navigation sidebar (Ctrl+[)"
+              : "Close navigation sidebar (Ctrl+[)"
+          }
+          aria-label={isCollapsed ? "Open sidebar" : "Close sidebar"}
+        >
+          <span className="sidebar-toggle-desktop-icon">
+            {isCollapsed ? (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                <line x1="9" y1="3" x2="9" y2="21"/>
+                <polyline points="13 10 15 12 13 14"/>
+              </svg>
+            ) : (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                <line x1="9" y1="3" x2="9" y2="21"/>
+                <polyline points="16 14 14 12 16 10"/>
+              </svg>
+            )}
+          </span>
+          <span className="sidebar-toggle-mobile-icon">☰</span>
+        </button>
+
+        {/* Breadcrumb Context Title */}
+        <div className="header-breadcrumb-box">
+          <span className="breadcrumb-section">{currentRouteMeta.section}</span>
+          <span className="breadcrumb-divider">/</span>
+          <h2 className="breadcrumb-title">{currentRouteMeta.title}</h2>
+        </div>
+      </div>
+
+      {/* Center: Global Real-Time Workforce Search Bar */}
+      <div className="header-center-cluster">
+        <HeaderEmployeeSearch />
+      </div>
+
+      {/* Right: Utilities (Clock, Notifications, User Profile, Sign out) */}
+      <div className="employee-header-actions">
+        {/* Live Clock Capsule */}
+        {currentTime && (
+          <div className="header-clock-capsule" title="Official Corporate Time (IST)">
+            <span className="clock-icon">🕒</span>
+            <span>{currentTime} IST</span>
+          </div>
+        )}
+
+        {/* Notifications Center */}
+        <div className="header-notification-wrapper" ref={dropdownRef}>
+          <button
+            type="button"
+            className="header-icon-btn"
+            onClick={() => setShowNotifications(!showNotifications)}
+            title="Notifications"
+            aria-label="Toggle notifications"
+          >
+            🔔
+            <span className="header-badge-count">{notifications.length}</span>
+          </button>
+
+          {showNotifications && (
+            <>
+              <div
+                className="notification-backdrop"
+                onClick={() => setShowNotifications(false)}
+              />
+              <div className="notification-dropdown">
+                <div className="notification-header">
+                  <span>System Notifications</span>
+                  <span style={{ color: "#0d9488", cursor: "pointer", fontSize: "0.72rem" }}>
+                    Clear All
+                  </span>
+                </div>
+                <ul className="notification-list">
+                  {notifications.map((item) => (
+                    <li key={item.id} className="notification-item">
+                      <strong>{item.title}</strong>
+                      <span>{item.desc}</span>
+                      <small style={{ color: "#94a3b8", fontSize: "0.68rem" }}>
+                        {item.time}
+                      </small>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* User Capsule */}
+        <Link
+          to="/employee/profile"
+          className="header-user-capsule"
+          title={`Signed in as ${displayName} (${roleLabel})`}
+        >
+          <div className="header-avatar" title={`Signed in as ${displayName}`}>
+            {headerPhoto ? (
+              <img
+                src={formatPhotoUrl(headerPhoto)}
+                alt={displayName}
+                className="header-avatar-img"
+                onError={(e) => {
+                  e.currentTarget.style.display = "none";
+                  const fallback = e.currentTarget.nextElementSibling;
+                  if (fallback) fallback.style.display = "flex";
+                }}
+              />
+            ) : null}
+            <span
+              className="header-avatar-initials"
+              style={{ display: headerPhoto ? "none" : "flex" }}
+            >
+              {initials}
+            </span>
+          </div>
+          <div className="header-user-details">
+            <span className="header-user-name">{displayName}</span>
+            <span className="header-user-role">{roleLabel}</span>
+          </div>
+        </Link>
+
+        {/* Sign Out Action */}
+        <button
+          type="button"
+          className="header-signout-btn"
+          onClick={logout}
+          title="Sign out of HRMS"
+        >
+          <span>Sign out</span>
+          <span>↪</span>
+        </button>
+      </div>
+    </header>
+  );
+}
+
+export default EmployeeHeader;

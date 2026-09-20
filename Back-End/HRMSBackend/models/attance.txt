@@ -1,0 +1,76 @@
+                    HRMS
+                      │
+                      ▼
+               Authentication
+                      │
+                JWT Middleware
+                      │
+          ┌───────────┴───────────┐
+          │                       │
+       Employee                    HR
+          │                       │
+          ▼                       ▼
+     Check In                View Everyone
+          │                       │
+          ▼                       ▼
+     Check Out               Monthly Report
+          │                       │
+          ▼                       ▼
+    Attendance Record       Attendance Summary
+          │
+          ▼
+      MongoDB
+          │
+          ▼
+ ┌──────────────────────────────┐
+ │ Attendance Collection        │
+ ├──────────────────────────────┤
+ │ Employee                     │
+ │ Date                         │
+ │ Check In                     │
+ │ Check Out                    │
+ │ Working Hours                │
+ │ Status                       │
+ │ Late                         │
+ │ Late Minutes                 │
+ │ Overtime                     │
+ │ Remarks                      │
+ └──────────────────────────────┘
+
+
+                          HRMS BACKEND
+                              │
+                              ▼
+                         AUTH / LOGIN
+                              │
+                              ▼
+                         JWT TOKEN
+                              │
+                 ┌────────────┴────────────┐
+                 ▼                         ▼
+             Employee                     HR/Admin
+                 │                         │
+                 ▼                         ▼
+              protect                    protect
+                 │                         │
+                 ▼                         ▼
+           Attendance              authorizeRoles()
+                 │                         │
+                 │                         ▼
+                 │                  HR/Admin allowed
+                 │                         │
+                 └────────────┬────────────┘
+                              ▼
+                    Attendance Controller
+                              │
+                ┌─────────────┼──────────────┐
+                ▼             ▼              ▼
+             Check-In     Check-Out       Reports
+                │             │              │
+                └─────────────┼──────────────┘
+                              ▼
+                         Attendance
+                            Model
+                              │
+                              ▼
+                           MongoDB

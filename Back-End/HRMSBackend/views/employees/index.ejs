@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Employee Management</title>
+
+    <link
+        rel="stylesheet"
+        href="/css/style.css"
+    >
+
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="header">
+
+        <div>
+
+            <h1>Employee Management</h1>
+
+            <p>HRMS Employee Directory</p>
+
+        </div>
+
+        <a
+            href="/employees/create"
+            class="btn btn-primary"
+        >
+            + Add Employee
+        </a>
+
+    </div>
+
+
+    <div class="card">
+
+        <form
+            action="/employees"
+            method="GET"
+            class="search-form"
+        >
+
+            <input
+                type="text"
+                name="search"
+                value="<%= search %>"
+                placeholder="Search by name, code, email, department..."
+            >
+
+            <button
+                type="submit"
+                class="btn btn-primary"
+            >
+                Search
+            </button>
+
+            <a
+                href="/employees"
+                class="btn btn-secondary"
+            >
+                Clear
+            </a>
+
+        </form>
+
+    </div>
+
+
+    <div class="card">
+
+        <div class="table-container">
+
+            <table>
+
+                <thead>
+
+                    <tr>
+
+                        <th>Code</th>
+
+                        <th>Name</th>
+
+                        <th>Email</th>
+
+                        <th>Department</th>
+
+                        <th>Designation</th>
+
+                        <th>Joining Date</th>
+
+                        <th>Status</th>
+
+                        <th>Actions</th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+                    <% if (employees.length === 0) { %>
+
+                        <tr>
+
+                            <td
+                                colspan="8"
+                                class="empty"
+                            >
+                                No employees found.
+                            </td>
+
+                        </tr>
+
+                    <% } %>
+
+
+                    <% employees.forEach(employee => { %>
+
+                        <tr>
+
+                            <td>
+                                <%= employee.employeeCode %>
+                            </td>
+
+                            <td>
+
+                                <%= employee.firstName %>
+                                <%= employee.lastName || "" %>
+
+                            </td>
+
+                            <td>
+                                <%= employee.email %>
+                            </td>
+
+                            <td>
+                                <%= employee.employment.department || "-" %>
+                            </td>
+
+                            <td>
+                                <%= employee.employment.designation || "-" %>
+                            </td>
+
+                            <td>
+
+                                <%= employee.employment.joiningDate
+                                    ? new Date(
+                                        employee.employment.joiningDate
+                                      ).toLocaleDateString("en-IN")
+                                    : "-"
+                                %>
+
+                            </td>
+
+                            <td>
+
+                                <span
+                                    class="status <%= employee.employment.status.toLowerCase() %>"
+                                >
+                                    <%= employee.employment.status %>
+                                </span>
+
+                            </td>
+
+                            <td>
+
+                                <a
+                                    href="/employees/<%= employee._id %>"
+                                    class="btn btn-view"
+                                >
+                                    View
+                                </a>
+
+                                <a
+                                    href="/employees/<%= employee._id %>/edit"
+                                    class="btn btn-edit"
+                                >
+                                    Edit
+                                </a>
+
+                                <form
+                                    action="/employees/<%= employee._id %>?_method=DELETE"
+                                    method="POST"
+                                    class="inline-form"
+                                    onsubmit="return confirm('Delete this employee?')"
+                                >
+
+                                    <button
+                                        type="submit"
+                                        class="btn btn-danger"
+                                    >
+                                        Delete
+                                    </button>
+
+                                </form>
+
+                            </td>
+
+                        </tr>
+
+                    <% }); %>
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+
+</html>

@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HRMS Admin — Employees</title>
+  <link rel="stylesheet" href="css/admin.css" />
+</head>
+<body>
+<div class="admin-layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+        </svg>
+      </div>
+      <div class="brand-text"><h1>HRMS</h1><span>Admin Panel</span></div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Main</div>
+      <a href="/admin/dashboard.html" class="nav-link">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+        Dashboard
+      </a>
+      <div class="nav-section-label">HR Management</div>
+      <a href="/admin/employees.html" class="nav-link active">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        Employees
+      </a>
+      <a href="/admin/accounts.html" class="nav-link">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+        Accounts
+      </a>
+      <a href="/admin/departments.html" class="nav-link">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z"/></svg>
+        Departments
+      </a>
+      <div class="nav-section-label">Operations</div>
+      <a href="/admin/leaves.html" class="nav-link">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+        Leave Requests
+      </a>
+      <a href="/admin/payroll.html" class="nav-link">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        Payroll
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="user-avatar" id="userAvatar">A</div>
+        <div class="user-info"><div class="name" id="userName">Admin</div><div class="role">Administrator</div></div>
+      </div>
+      <button class="btn-logout" id="logoutBtn">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+        Sign Out
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main-content">
+    <header class="page-header">
+      <div class="header-breadcrumb">
+        <span>Admin</span><span class="sep">/</span><span class="current">Employees</span>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-primary btn-sm" id="addEmployeeBtn">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+          Add Employee
+        </button>
+      </div>
+    </header>
+
+    <div class="page-content">
+      <div class="section-card animate-fade">
+        <div class="section-header">
+          <div>
+            <div class="section-title">All Employees</div>
+            <div class="section-subtitle" id="empCount">Loading…</div>
+          </div>
+        </div>
+
+        <!-- Toolbar -->
+        <div style="padding:16px 24px;border-bottom:1px solid var(--border)">
+          <div class="toolbar" style="margin-bottom:0">
+            <div class="search-box">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+              <input type="text" id="searchInput" placeholder="Search by name, code or email…" />
+            </div>
+            <div class="toolbar-actions">
+              <select class="filter-select" id="statusFilter">
+                <option value="">All Status</option>
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+                <option value="Terminated">Terminated</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Table -->
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Employee</th>
+                <th>Code</th>
+                <th>Department</th>
+                <th>Designation</th>
+                <th>Type</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="empTableBody">
+              <tr><td colspan="7" style="text-align:center;padding:48px;color:var(--text-muted)">
+                <div style="display:flex;align-items:center;justify-content:center;gap:8px">
+                  <span class="spinner" style="border-color:rgba(255,255,255,0.2);border-top-color:var(--accent)"></span> Loading employees…
+                </div>
+              </td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="pagination" id="paginationBar">
+          <span class="pagination-info" id="pageInfo"></span>
+          <div class="pagination-controls" id="pageControls"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ── VIEW MODAL ──────────────────────────────────── -->
+<div class="modal-overlay" id="viewModal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <span class="modal-title">Employee Details</span>
+      <button class="btn-close" onclick="closeModal('viewModal')">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="modal-body" id="viewModalBody"></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('viewModal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── ADD / EDIT MODAL ───────────────────────────── -->
+<div class="modal-overlay" id="formModal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <span class="modal-title" id="formModalTitle">Add Employee</span>
+      <button class="btn-close" onclick="closeModal('formModal')">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <form id="empForm" novalidate>
+        <input type="hidden" id="empId" />
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label required" for="fFirstName">First Name</label>
+            <input type="text" id="fFirstName" class="form-control" placeholder="John" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="fLastName">Last Name</label>
+            <input type="text" id="fLastName" class="form-control" placeholder="Doe" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label required" for="fEmail">Email</label>
+            <input type="email" id="fEmail" class="form-control" placeholder="john@company.com" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="fPhone">Phone</label>
+            <input type="text" id="fPhone" class="form-control" placeholder="+91 98765 43210" />
+          </div>
+        </div>
+        <div class="form-row" id="addOnlyFields">
+          <div class="form-group">
+            <label class="form-label required" for="fEmployeeCode">Employee Code</label>
+            <input type="text" id="fEmployeeCode" class="form-control" placeholder="EMP001" />
+          </div>
+          <div class="form-group">
+            <label class="form-label required" for="fJoiningDate">Joining Date</label>
+            <input type="date" id="fJoiningDate" class="form-control" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="fDesignation">Designation</label>
+            <input type="text" id="fDesignation" class="form-control" placeholder="Software Engineer" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="fEmploymentType">Employment Type</label>
+            <select id="fEmploymentType" class="form-control">
+              <option value="Full Time">Full Time</option>
+              <option value="Part Time">Part Time</option>
+              <option value="Contract">Contract</option>
+              <option value="Internship">Internship</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="fSalary">Salary (₹)</label>
+            <input type="number" id="fSalary" class="form-control" placeholder="50000" min="0" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="fStatus">Status</label>
+            <select id="fStatus" class="form-control">
+              <option value="Active">Active</option>
+              <option value="Inactive">Inactive</option>
+              <option value="Terminated">Terminated</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="fGender">Gender</label>
+          <select id="fGender" class="form-control">
+            <option value="">Select gender</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('formModal')">Cancel</button>
+      <button class="btn btn-primary" id="saveEmpBtn">
+        <span id="saveEmpBtnText">Save Employee</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── DELETE CONFIRM MODAL ───────────────────────── -->
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal modal-sm">
+    <div class="modal-body" style="padding-top:32px">
+      <div class="confirm-icon danger">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+      </div>
+      <div class="confirm-title">Delete Employee</div>
+      <div class="confirm-text">Are you sure you want to delete <strong id="deleteEmpName"></strong>? This action cannot be undone.</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('deleteModal')">Cancel</button>
+      <button class="btn btn-danger" id="confirmDeleteBtn">Delete</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+  const API   = 'http://localhost:3000';
+  (function checkProtocol() {
+    if (window.location.protocol === 'file:') {
+      document.body.innerHTML = `
+        <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0f0f17;font-family:system-ui,sans-serif;padding:20px">
+          <div style="background:#1a1a2e;border:1px solid rgba(239,68,68,0.4);border-radius:12px;padding:32px;max-width:500px;text-align:center">
+            <div style="font-size:48px;margin-bottom:16px">⚠️</div>
+            <h2 style="color:#f87171;margin:0 0 12px">Wrong URL</h2>
+            <p style="color:#94a3b8;margin:0 0 20px;line-height:1.6">You opened this file directly from your filesystem.<br>The admin panel must be served through the Node.js server.</p>
+            <a href="http://localhost:3000/admin/index.html" style="display:inline-block;background:#6366f1;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600">Open Admin Panel →</a>
+            <p style="color:#64748b;font-size:13px;margin:16px 0 0">Make sure <code style="color:#818cf8">nodemon server.js</code> is running first</p>
+          </div>
+        </div>`;
+      throw new Error("Cannot run on file:// protocol");
+    }
+  })();
+  const token = localStorage.getItem('hrms_admin_token');
+  const user  = JSON.parse(localStorage.getItem('hrms_admin_user') || 'null');
+  if (!token || !user || user.role !== 'admin') window.location.replace('/admin/index.html');
+  if (user) { document.getElementById('userName').textContent = user.name||'Admin'; document.getElementById('userAvatar').textContent=(user.name||'A')[0].toUpperCase(); }
+  document.getElementById('logoutBtn').addEventListener('click',()=>{ localStorage.removeItem('hrms_admin_token'); localStorage.removeItem('hrms_admin_user'); window.location.replace('/admin/index.html'); });
+
+  function authH() { return { 'Content-Type':'application/json', 'Authorization':`Bearer ${token}` }; }
+
+  function toast(type, title, msg) {
+    const icons = { success:'<path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>', error:'<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>', info:'<path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>' };
+    const el = document.createElement('div'); el.className=`toast ${type}`;
+    el.innerHTML=`<div class="toast-icon"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">${icons[type]||icons.info}</svg></div><div class="toast-body"><div class="toast-title">${title}</div>${msg?`<div class="toast-msg">${msg}</div>`:''}</div>`;
+    document.getElementById('toastContainer').appendChild(el);
+    requestAnimationFrame(()=>requestAnimationFrame(()=>el.classList.add('show')));
+    setTimeout(()=>{ el.classList.remove('show'); setTimeout(()=>el.remove(),350); },3500);
+  }
+
+  function openModal(id)  { document.getElementById(id).classList.add('active'); }
+  function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+  // ── Close on backdrop click ────────────────────────
+  document.querySelectorAll('.modal-overlay').forEach(o => {
+    o.addEventListener('click', e => { if (e.target === o) closeModal(o.id); });
+  });
+
+  // ── Data ───────────────────────────────────────────
+  let allEmployees  = [];
+  let filteredEmps  = [];
+  let currentPage   = 1;
+  const pageSize    = 10;
+  let deleteTargetId = null;
+
+  function statusBadge(s) {
+    const map = { Active:'success', Inactive:'warning', Terminated:'danger' };
+    return `<span class="badge ${map[s]||'muted'}"><span class="badge-dot"></span>${s||'—'}</span>`;
+  }
+
+  function getInitials(f, l) { return ((f||'')[0]+(l||'')[0]).toUpperCase() || '?'; }
+
+  function renderTable() {
+    const tbody = document.getElementById('empTableBody');
+    const start = (currentPage - 1) * pageSize;
+    const page  = filteredEmps.slice(start, start + pageSize);
+
+    if (!page.length) {
+      tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state">
+        <div class="empty-icon"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg></div>
+        <h3>No employees found</h3><p>Try adjusting your search or filters.</p>
+      </div></td></tr>`;
+      document.getElementById('pageInfo').textContent='';
+      document.getElementById('pageControls').innerHTML='';
+      return;
+    }
+
+    tbody.innerHTML = page.map(emp => {
+      const dept = emp.employment?.department || '—';
+      const desg = emp.employment?.designation || '—';
+      const type = emp.employment?.employmentType || '—';
+      const stat = emp.employment?.status || '—';
+      return `<tr>
+        <td>
+          <div class="cell-user">
+            <div class="cell-avatar">${getInitials(emp.firstName,emp.lastName)}</div>
+            <div>
+              <div class="cell-name">${emp.firstName} ${emp.lastName||''}</div>
+              <div class="cell-email">${emp.email||''}</div>
+            </div>
+          </div>
+        </td>
+        <td><span class="cell-code">${emp.employeeCode||'—'}</span></td>
+        <td>${dept}</td>
+        <td>${desg}</td>
+        <td><span class="badge muted">${type}</span></td>
+        <td>${statusBadge(stat)}</td>
+        <td>
+          <div class="flex gap-2">
+            <button class="btn-icon" title="View" onclick="viewEmployee('${emp._id}')">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+            </button>
+            <button class="btn-icon" title="Edit" onclick="editEmployee('${emp._id}')">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+            </button>
+            <button class="btn-icon danger" title="Delete" onclick="promptDelete('${emp._id}','${emp.firstName} ${emp.lastName||''}')">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+            </button>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+
+    // Pagination info
+    const total = filteredEmps.length;
+    const pages = Math.ceil(total / pageSize);
+    document.getElementById('pageInfo').textContent = `Showing ${start+1}–${Math.min(start+pageSize,total)} of ${total} employees`;
+
+    let pHtml = `<button class="page-btn" onclick="goPage(${currentPage-1})" ${currentPage===1?'disabled':''}>&lsaquo;</button>`;
+    for (let i=1;i<=pages;i++) {
+      if (i===1||i===pages||Math.abs(i-currentPage)<=1) {
+        pHtml += `<button class="page-btn ${i===currentPage?'active':''}" onclick="goPage(${i})">${i}</button>`;
+      } else if (Math.abs(i-currentPage)===2) {
+        pHtml += `<span class="page-btn" style="cursor:default">…</span>`;
+      }
+    }
+    pHtml += `<button class="page-btn" onclick="goPage(${currentPage+1})" ${currentPage===pages?'disabled':''}>&rsaquo;</button>`;
+    document.getElementById('pageControls').innerHTML = pHtml;
+  }
+
+  function goPage(p) {
+    const pages = Math.ceil(filteredEmps.length / pageSize);
+    if (p<1||p>pages) return;
+    currentPage = p;
+    renderTable();
+  }
+
+  function applyFilter() {
+    const q = document.getElementById('searchInput').value.toLowerCase();
+    const s = document.getElementById('statusFilter').value;
+    filteredEmps = allEmployees.filter(e => {
+      const name  = `${e.firstName} ${e.lastName||''}`.toLowerCase();
+      const code  = (e.employeeCode||'').toLowerCase();
+      const email = (e.email||'').toLowerCase();
+      const stat  = e.employment?.status || '';
+      return (!q || name.includes(q) || code.includes(q) || email.includes(q))
+          && (!s || stat === s);
+    });
+    currentPage = 1;
+    renderTable();
+  }
+
+  document.getElementById('searchInput').addEventListener('input', applyFilter);
+  document.getElementById('statusFilter').addEventListener('change', applyFilter);
+
+  async function loadEmployees() {
+    try {
+      const res  = await fetch(`${API}/api/v1/employees`, { headers: authH() });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message||'Failed to load');
+      allEmployees = data.employees || data.data || data || [];
+      document.getElementById('empCount').textContent = `${allEmployees.length} employees total`;
+      applyFilter();
+    } catch(err) {
+      toast('error','Error',err.message);
+      document.getElementById('empTableBody').innerHTML=`<tr><td colspan="7" style="text-align:center;padding:48px;color:var(--text-muted)">${err.message}</td></tr>`;
+    }
+  }
+
+  // ── View Employee ──────────────────────────────────
+  async function viewEmployee(id) {
+    try {
+      const res  = await fetch(`${API}/api/v1/employees/${id}`, { headers: authH() });
+      const data = await res.json();
+      const e    = data.employee || data.data || data;
+      document.getElementById('viewModalBody').innerHTML = `
+        <div class="info-grid" style="margin-bottom:20px">
+          <div class="info-item"><span class="label">Full Name</span><span class="value">${e.firstName} ${e.lastName||''}</span></div>
+          <div class="info-item"><span class="label">Employee Code</span><span class="value font-mono">${e.employeeCode||'—'}</span></div>
+          <div class="info-item"><span class="label">Email</span><span class="value">${e.email||'—'}</span></div>
+          <div class="info-item"><span class="label">Phone</span><span class="value">${e.phone||'—'}</span></div>
+          <div class="info-item"><span class="label">Gender</span><span class="value">${e.personal?.gender||'—'}</span></div>
+          <div class="info-item"><span class="label">Date of Birth</span><span class="value">${e.personal?.dateOfBirth?new Date(e.personal.dateOfBirth).toLocaleDateString():'—'}</span></div>
+          <div class="info-item"><span class="label">Department</span><span class="value">${e.employment?.department||'—'}</span></div>
+          <div class="info-item"><span class="label">Designation</span><span class="value">${e.employment?.designation||'—'}</span></div>
+          <div class="info-item"><span class="label">Employment Type</span><span class="value">${e.employment?.employmentType||'—'}</span></div>
+          <div class="info-item"><span class="label">Joining Date</span><span class="value">${e.employment?.joiningDate?new Date(e.employment.joiningDate).toLocaleDateString():'—'}</span></div>
+          <div class="info-item"><span class="label">Salary</span><span class="value">₹${(e.employment?.salary||0).toLocaleString()}</span></div>
+          <div class="info-item"><span class="label">Status</span><span class="value">${e.employment?.status||'—'}</span></div>
+        </div>`;
+      openModal('viewModal');
+    } catch(err) { toast('error','Error',err.message); }
+  }
+
+  // ── Add Employee ───────────────────────────────────
+  document.getElementById('addEmployeeBtn').addEventListener('click', () => {
+    document.getElementById('formModalTitle').textContent = 'Add Employee';
+    document.getElementById('empId').value = '';
+    document.getElementById('empForm').reset();
+    document.getElementById('saveEmpBtnText').textContent = 'Add Employee';
+    document.getElementById('addOnlyFields').style.display = '';
+    openModal('formModal');
+  });
+
+  // ── Edit Employee ──────────────────────────────────
+  function editEmployee(id) {
+    const emp = allEmployees.find(e => e._id === id);
+    if (!emp) return;
+    document.getElementById('formModalTitle').textContent = 'Edit Employee';
+    document.getElementById('empId').value            = emp._id;
+    document.getElementById('fFirstName').value       = emp.firstName||'';
+    document.getElementById('fLastName').value        = emp.lastName||'';
+    document.getElementById('fEmail').value           = emp.email||'';
+    document.getElementById('fPhone').value           = emp.phone||'';
+    document.getElementById('fDesignation').value     = emp.employment?.designation||'';
+    document.getElementById('fEmploymentType').value  = emp.employment?.employmentType||'Full Time';
+    document.getElementById('fSalary').value          = emp.employment?.salary||'';
+    document.getElementById('fStatus').value          = emp.employment?.status||'Active';
+    document.getElementById('fGender').value          = emp.personal?.gender||'';
+    document.getElementById('addOnlyFields').style.display = 'none';
+    document.getElementById('saveEmpBtnText').textContent = 'Save Changes';
+    openModal('formModal');
+  }
+
+  // ── Save Employee ──────────────────────────────────
+  document.getElementById('saveEmpBtn').addEventListener('click', async () => {
+    const id   = document.getElementById('empId').value;
+    const firstName = document.getElementById('fFirstName').value.trim();
+    const lastName  = document.getElementById('fLastName').value.trim();
+    const email     = document.getElementById('fEmail').value.trim();
+    const phone     = document.getElementById('fPhone').value.trim();
+    const designation    = document.getElementById('fDesignation').value.trim();
+    const employmentType = document.getElementById('fEmploymentType').value;
+    const salary         = Number(document.getElementById('fSalary').value)||0;
+    const status         = document.getElementById('fStatus').value;
+    const gender         = document.getElementById('fGender').value;
+
+    if (!firstName) { toast('error','Validation','First name is required'); return; }
+    if (!email)     { toast('error','Validation','Email is required'); return; }
+
+    const btn  = document.getElementById('saveEmpBtn');
+    const text = document.getElementById('saveEmpBtnText');
+    btn.disabled = true;
+    text.innerHTML = '<span class="spinner"></span>';
+
+    try {
+      let method, url, payload;
+      if (id) {
+        // Edit: PUT with flat fields
+        method = 'PUT';
+        url    = `${API}/api/v1/employees/${id}`;
+        payload = {
+          firstName, lastName, email, phone,
+          'employment.designation':    designation,
+          'employment.employmentType': employmentType,
+          'employment.salary':         salary,
+          'employment.status':         status,
+          'personal.gender':           gender,
+        };
+      } else {
+        // Create: POST as array (controller requires array)
+        const employeeCode = document.getElementById('fEmployeeCode').value.trim();
+        const joiningDate  = document.getElementById('fJoiningDate').value;
+        if (!employeeCode) { toast('error','Validation','Employee code is required'); btn.disabled=false; text.textContent='Add Employee'; return; }
+        if (!joiningDate)  { toast('error','Validation','Joining date is required'); btn.disabled=false; text.textContent='Add Employee'; return; }
+        method = 'POST';
+        url    = `${API}/api/v1/employees`;
+        payload = [{
+          firstName, lastName, email, phone, employeeCode, joiningDate,
+          employment: { designation, employmentType, salary, status },
+          personal: { gender },
+        }];
+      }
+      const res  = await fetch(url, { method, headers: authH(), body: JSON.stringify(payload) });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message||'Failed to save');
+      toast('success', id?'Employee Updated':'Employee Added', `${firstName} ${lastName}`);
+      closeModal('formModal');
+      loadEmployees();
+    } catch(err) {
+      toast('error','Error',err.message);
+    } finally {
+      btn.disabled = false;
+      text.textContent = id ? 'Save Changes' : 'Add Employee';
+    }
+  });
+
+  // ── Delete Employee ────────────────────────────────
+  function promptDelete(id, name) {
+    deleteTargetId = id;
+    document.getElementById('deleteEmpName').textContent = name;
+    openModal('deleteModal');
+  }
+
+  document.getElementById('confirmDeleteBtn').addEventListener('click', async () => {
+    if (!deleteTargetId) return;
+    const btn = document.getElementById('confirmDeleteBtn');
+    btn.disabled = true; btn.textContent = 'Deleting…';
+    try {
+      const res  = await fetch(`${API}/api/v1/employees/${deleteTargetId}`, { method:'DELETE', headers: authH() });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message||'Delete failed');
+      toast('success','Employee Deleted','Employee record removed successfully.');
+      closeModal('deleteModal');
+      loadEmployees();
+    } catch(err) {
+      toast('error','Error',err.message);
+    } finally {
+      btn.disabled = false; btn.textContent = 'Delete';
+      deleteTargetId = null;
+    }
+  });
+
+  loadEmployees();
+</script>
+</body>
+</html>

@@ -1,0 +1,349 @@
+/* ==========================================================================
+   Employee Timesheets Hub Styles - Quadratic Systems Inc
+   ========================================================================== */
+
+.employee-timesheets-hub {
+  min-height: calc(100vh - 72px);
+  padding: 2.25rem 2.5rem 4rem;
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+.employee-timesheets-hub > * {
+  max-width: 1360px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* ==========================================================================
+   Hero Command Banner
+   ========================================================================== */
+
+.time-hero-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1.75rem;
+  padding: 2.25rem 2.5rem;
+  background: linear-gradient(135deg, #091e20 0%, #0d3438 55%, #134e4a 100%);
+  border-radius: 20px;
+  color: #ffffff;
+  margin-bottom: 2rem;
+  box-shadow: 0 10px 30px -5px rgba(13, 52, 56, 0.35);
+  position: relative;
+  overflow: hidden;
+}
+
+.time-hero-banner::after {
+  content: "";
+  position: absolute;
+  top: -50%;
+  right: -8%;
+  width: 380px;
+  height: 380px;
+  background: radial-gradient(circle, rgba(45, 212, 191, 0.18) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.time-hero-left {
+  max-width: 680px;
+  position: relative;
+  z-index: 1;
+}
+
+.time-hero-banner h1 {
+  margin: 0 0 0.4rem;
+  font-size: clamp(26px, 3.2vw, 36px);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1.15;
+}
+
+.time-hero-banner p {
+  margin: 0 0 0.75rem;
+  color: #ccfbf1;
+  font-size: 0.96rem;
+  line-height: 1.5;
+}
+
+.time-hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  flex-wrap: wrap;
+  position: relative;
+  z-index: 1;
+}
+
+.week-navigator-box {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(255, 255, 255, 0.12);
+  padding: 4px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(8px);
+}
+
+.week-nav-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 0;
+  background: transparent;
+  color: #ffffff;
+  font-size: 1.1rem;
+  font-weight: 800;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: all 0.15s ease;
+}
+
+.week-nav-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.week-date-input {
+  height: 36px;
+  padding: 0 0.75rem;
+  border: 0;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+/* ==========================================================================
+   KPI Cards Grid
+   ========================================================================== */
+
+.time-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 2rem;
+}
+
+/* ==========================================================================
+   Dual-Pane Layout (Timesheet Form + Summary Matrix)
+   ========================================================================== */
+
+.timesheet-workspace-layout {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 1.75rem;
+  margin-bottom: 2rem;
+}
+
+@media (max-width: 960px) {
+  .timesheet-workspace-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.timesheet-card-panel {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  padding: 1.75rem 2rem;
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05);
+}
+
+.timesheet-card-panel h2 {
+  margin: 0 0 0.35rem;
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.timesheet-card-panel p {
+  margin: 0 0 1.5rem;
+  font-size: 0.86rem;
+  color: #64748b;
+}
+
+.task-entry-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+}
+
+/* ==========================================================================
+   Timesheet Ledger Table Panel
+   ========================================================================== */
+
+.timesheet-table-panel {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  padding: 1.75rem 2rem;
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05);
+}
+
+.timesheet-table-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.project-tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.18rem 0.55rem;
+  border-radius: 6px;
+  background: #f1f5f9;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #475569;
+}
+
+.time-action-group {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.time-inline-btn {
+  height: 32px;
+  padding: 0 0.75rem;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
+}
+
+.time-inline-btn.edit {
+  background: #f0fdfa;
+  color: #0f766e;
+  border-color: #ccfbf1;
+}
+
+.time-inline-btn.edit:hover {
+  background: #0d9488;
+  color: #ffffff;
+}
+
+.time-inline-btn.submit {
+  background: #ecfdf5;
+  color: #059669;
+  border-color: #a7f3d0;
+}
+
+.time-inline-btn.submit:hover {
+  background: #059669;
+  color: #ffffff;
+}
+
+.time-inline-btn.delete {
+  background: #fff1f2;
+  color: #e11d48;
+  border-color: #fecdd3;
+}
+
+.time-inline-btn.delete:hover {
+  background: #e11d48;
+  color: #ffffff;
+}
+
+/* ==========================================================================
+   Responsive Breakpoints - Timesheets Hub
+   ========================================================================== */
+
+.table-responsive-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+.att-records-table {
+  min-width: 720px;
+}
+
+@media (max-width: 1200px) {
+  .time-kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 992px) {
+  .employee-timesheets-hub {
+    padding: 1.75rem 1.5rem 3.5rem;
+  }
+
+  .time-hero-banner {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 1.75rem;
+    gap: 1.5rem;
+  }
+
+  .time-hero-left {
+    max-width: 100%;
+  }
+
+  .time-hero-actions {
+    width: 100%;
+    align-items: flex-start;
+  }
+
+  .timesheet-workspace-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .employee-timesheets-hub {
+    padding: 1.25rem 1rem 3rem;
+  }
+
+  .time-kpi-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .form-row-2col {
+    grid-template-columns: 1fr;
+  }
+
+  .week-navigator-box {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .week-range-text {
+    font-size: 0.76rem;
+  }
+
+  .timesheet-form-card,
+  .timesheet-table-panel {
+    padding: 1.25rem 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .time-hero-banner {
+    padding: 1.35rem 1.15rem;
+    border-radius: 16px;
+  }
+
+  .timesheet-table-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+}

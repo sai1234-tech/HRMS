@@ -1,0 +1,118 @@
+/* Shift Roster CSS */
+
+.roster-hub {
+  padding: 2.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  font-family: 'Inter', sans-serif;
+  background-color: #f8fafc;
+  min-height: 100vh;
+}
+
+.roster-header {
+  margin-bottom: 2.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.roster-header h1 {
+  font-size: 2rem;
+  color: #0f172a;
+  margin-bottom: 0.5rem;
+  font-weight: 800;
+}
+
+.roster-header p {
+  color: #64748b;
+  font-size: 1.05rem;
+}
+
+.roster-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+}
+
+.shift-col {
+  background: white;
+  border-radius: 16px;
+  padding: 1.5rem;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+  border-top: 4px solid #cbd5e1;
+}
+
+.shift-col.morning { border-top-color: #3b82f6; }
+.shift-col.evening { border-top-color: #f59e0b; }
+.shift-col.night { border-top-color: #8b5cf6; }
+
+.shift-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.shift-header h3 {
+  font-size: 1.2rem;
+  color: #1e293b;
+}
+
+.time-badge {
+  background: #f1f5f9;
+  padding: 0.3rem 0.6rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  color: #475569;
+  font-weight: 600;
+}
+
+.roster-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f8fafc;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  border: 1px solid #e2e8f0;
+}
+
+.emp-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.emp-info strong {
+  font-size: 1rem;
+  color: #0f172a;
+}
+
+.emp-info span {
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.shift-select {
+  padding: 0.4rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: white;
+  font-size: 0.85rem;
+}
+
+.empty {
+  text-align: center;
+  color: #94a3b8;
+  font-style: italic;
+  padding: 2rem 0;
+}
+
+@media (max-width: 900px) {
+  .roster-hub {
+    padding: 1rem;
+  }
+  .roster-grid {
+    grid-template-columns: 1fr;
+  }
+}

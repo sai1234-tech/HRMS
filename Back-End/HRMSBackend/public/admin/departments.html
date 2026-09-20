@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HRMS Admin — Departments</title>
+  <link rel="stylesheet" href="css/admin.css" />
+</head>
+<body>
+<div class="admin-layout">
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-icon"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg></div>
+      <div class="brand-text"><h1>HRMS</h1><span>Admin Panel</span></div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Main</div>
+      <a href="/admin/dashboard.html" class="nav-link"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>Dashboard</a>
+      <div class="nav-section-label">HR Management</div>
+      <a href="/admin/employees.html" class="nav-link"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>Employees</a>
+      <a href="/admin/accounts.html" class="nav-link"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>Accounts</a>
+      <a href="/admin/departments.html" class="nav-link active"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z"/></svg>Departments</a>
+      <div class="nav-section-label">Operations</div>
+      <a href="/admin/leaves.html" class="nav-link"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>Leave Requests</a>
+      <a href="/admin/payroll.html" class="nav-link"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>Payroll</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="user-avatar" id="userAvatar">A</div>
+        <div class="user-info"><div class="name" id="userName">Admin</div><div class="role">Administrator</div></div>
+      </div>
+      <button class="btn-logout" id="logoutBtn"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>Sign Out</button>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <header class="page-header">
+      <div class="header-breadcrumb"><span>Admin</span><span class="sep">/</span><span class="current">Departments</span></div>
+      <div class="header-actions">
+        <button class="btn btn-primary btn-sm" id="addDeptBtn">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+          Add Department
+        </button>
+      </div>
+    </header>
+
+    <div class="page-content">
+      <div class="section-card animate-fade">
+        <div class="section-header">
+          <div><div class="section-title">All Departments</div><div class="section-subtitle" id="deptCount">Loading…</div></div>
+        </div>
+        <div style="padding:16px 24px;border-bottom:1px solid var(--border)">
+          <div class="toolbar" style="margin-bottom:0">
+            <div class="search-box">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+              <input type="text" id="deptSearch" placeholder="Search departments…" />
+            </div>
+          </div>
+        </div>
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr><th>Department Name</th><th>Description</th><th>Created</th><th>Actions</th></tr>
+            </thead>
+            <tbody id="deptTableBody">
+              <tr><td colspan="4" style="text-align:center;padding:48px;color:var(--text-muted)">Loading departments…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Add / Edit Modal -->
+<div class="modal-overlay" id="deptFormModal">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <span class="modal-title" id="deptModalTitle">Add Department</span>
+      <button class="btn-close" onclick="closeModal('deptFormModal')"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <form id="deptForm">
+        <input type="hidden" id="deptId" />
+        <div class="form-group">
+          <label class="form-label required" for="deptName">Department Name</label>
+          <input type="text" id="deptName" class="form-control" placeholder="e.g. Engineering" required />
+        </div>
+        <div class="form-group mb-0">
+          <label class="form-label" for="deptDesc">Description</label>
+          <textarea id="deptDesc" class="form-control" rows="3" placeholder="Brief description of this department" style="resize:vertical"></textarea>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('deptFormModal')">Cancel</button>
+      <button class="btn btn-primary" id="saveDeptBtn"><span id="saveDeptText">Save</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirm -->
+<div class="modal-overlay" id="deptDeleteModal">
+  <div class="modal modal-sm">
+    <div class="modal-body" style="padding-top:32px">
+      <div class="confirm-icon danger"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></div>
+      <div class="confirm-title">Delete Department</div>
+      <div class="confirm-text">Delete <strong id="deleteDeptName"></strong>? This cannot be undone.</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('deptDeleteModal')">Cancel</button>
+      <button class="btn btn-danger" id="confirmDeptDelete">Delete</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+  const API=`http://localhost:3000`,token=localStorage.getItem('hrms_admin_token'),user=JSON.parse(localStorage.getItem('hrms_admin_user')||'null');
+  (function checkProtocol() {
+    if (window.location.protocol === 'file:') {
+      document.body.innerHTML = `
+        <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0f0f17;font-family:system-ui,sans-serif;padding:20px">
+          <div style="background:#1a1a2e;border:1px solid rgba(239,68,68,0.4);border-radius:12px;padding:32px;max-width:500px;text-align:center">
+            <div style="font-size:48px;margin-bottom:16px">⚠️</div>
+            <h2 style="color:#f87171;margin:0 0 12px">Wrong URL</h2>
+            <p style="color:#94a3b8;margin:0 0 20px;line-height:1.6">You opened this file directly from your filesystem.<br>The admin panel must be served through the Node.js server.</p>
+            <a href="http://localhost:3000/admin/index.html" style="display:inline-block;background:#6366f1;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600">Open Admin Panel →</a>
+            <p style="color:#64748b;font-size:13px;margin:16px 0 0">Make sure <code style="color:#818cf8">nodemon server.js</code> is running first</p>
+          </div>
+        </div>`;
+      throw new Error("Cannot run on file:// protocol");
+    }
+  })();
+  if(!token||!user||user.role!=='admin') window.location.replace('/admin/index.html');
+  if(user){document.getElementById('userName').textContent=user.name||'Admin';document.getElementById('userAvatar').textContent=(user.name||'A')[0].toUpperCase();}
+  document.getElementById('logoutBtn').addEventListener('click',()=>{localStorage.removeItem('hrms_admin_token');localStorage.removeItem('hrms_admin_user');window.location.replace('/admin/index.html');});
+  function authH(){return{'Content-Type':'application/json','Authorization':`Bearer ${token}`};}
+  function openModal(id){document.getElementById(id).classList.add('active');}
+  function closeModal(id){document.getElementById(id).classList.remove('active');}
+  document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)closeModal(o.id);}));
+
+  function toast(type,title,msg){
+    const icons={success:'<path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>',error:'<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>',info:'<path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>'};
+    const el=document.createElement('div');el.className=`toast ${type}`;
+    el.innerHTML=`<div class="toast-icon"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">${icons[type]||icons.info}</svg></div><div class="toast-body"><div class="toast-title">${title}</div>${msg?`<div class="toast-msg">${msg}</div>`:''}</div>`;
+    document.getElementById('toastContainer').appendChild(el);
+    requestAnimationFrame(()=>requestAnimationFrame(()=>el.classList.add('show')));
+    setTimeout(()=>{el.classList.remove('show');setTimeout(()=>el.remove(),350);},3500);
+  }
+
+  let allDepts=[],deleteId=null;
+
+  function renderDepts(list){
+    const tbody=document.getElementById('deptTableBody');
+    if(!list.length){tbody.innerHTML=`<tr><td colspan="4"><div class="empty-state"><div class="empty-icon"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z"/></svg></div><h3>No departments yet</h3><p>Create your first department.</p></div></td></tr>`;return;}
+    tbody.innerHTML=list.map(d=>`<tr>
+      <td><div class="flex items-center gap-2"><div style="width:32px;height:32px;background:rgba(99,102,241,0.15);border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--accent-light);font-weight:700;font-size:13px">${(d.name||'?')[0].toUpperCase()}</div><span class="cell-name">${d.name||'—'}</span></div></td>
+      <td style="color:var(--text-muted);font-size:13px">${d.description||'—'}</td>
+      <td style="color:var(--text-muted);font-size:13px">${d.createdAt?new Date(d.createdAt).toLocaleDateString():'—'}</td>
+      <td><div class="flex gap-2">
+        <button class="btn-icon" title="Edit" onclick='editDept(${JSON.stringify(d)})'><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button>
+        <button class="btn-icon danger" title="Delete" onclick="promptDeleteDept('${d._id}','${d.name}')"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button>
+      </div></td>
+    </tr>`).join('');
+  }
+
+  async function loadDepts(){
+    try{
+      const res=await fetch(`${API}/api/v1/departments`,{headers:authH()});
+      const data=await res.json();
+      if(!res.ok) throw new Error(data.message||'Failed to load');
+      allDepts=data.departments||data.data||data||[];
+      document.getElementById('deptCount').textContent=`${allDepts.length} department${allDepts.length!==1?'s':''}`;
+      renderDepts(allDepts);
+    }catch(err){toast('error','Error',err.message);}
+  }
+
+  document.getElementById('deptSearch').addEventListener('input',function(){
+    const q=this.value.toLowerCase();
+    renderDepts(allDepts.filter(d=>(d.name||'').toLowerCase().includes(q)||(d.description||'').toLowerCase().includes(q)));
+  });
+
+  document.getElementById('addDeptBtn').addEventListener('click',()=>{
+    document.getElementById('deptModalTitle').textContent='Add Department';
+    document.getElementById('deptId').value='';
+    document.getElementById('deptName').value='';
+    document.getElementById('deptDesc').value='';
+    document.getElementById('saveDeptText').textContent='Add Department';
+    openModal('deptFormModal');
+  });
+
+  function editDept(d){
+    document.getElementById('deptModalTitle').textContent='Edit Department';
+    document.getElementById('deptId').value=d._id;
+    document.getElementById('deptName').value=d.name||'';
+    document.getElementById('deptDesc').value=d.description||'';
+    document.getElementById('saveDeptText').textContent='Save Changes';
+    openModal('deptFormModal');
+  }
+
+  document.getElementById('saveDeptBtn').addEventListener('click',async()=>{
+    const id=document.getElementById('deptId').value;
+    const name=document.getElementById('deptName').value.trim();
+    const desc=document.getElementById('deptDesc').value.trim();
+    if(!name){toast('error','Validation','Department name is required');return;}
+    const btn=document.getElementById('saveDeptBtn');const text=document.getElementById('saveDeptText');
+    btn.disabled=true;text.innerHTML='<span class="spinner"></span>';
+    try{
+      const method=id?'PUT':'POST';
+      const url=id?`${API}/api/v1/departments/${id}`:`${API}/api/v1/departments`;
+      const body=id?{name,description:desc}:[{name,description:desc}];
+      const res=await fetch(url,{method,headers:authH(),body:JSON.stringify(body)});
+      const data=await res.json();
+      if(!res.ok) throw new Error(data.message||'Save failed');
+      toast('success',id?'Department Updated':'Department Created',name);
+      closeModal('deptFormModal');
+      loadDepts();
+    }catch(err){toast('error','Error',err.message);}
+    finally{btn.disabled=false;text.textContent=id?'Save Changes':'Add Department';}
+  });
+
+  function promptDeleteDept(id,name){
+    deleteId=id;
+    document.getElementById('deleteDeptName').textContent=name;
+    openModal('deptDeleteModal');
+  }
+
+  document.getElementById('confirmDeptDelete').addEventListener('click',async()=>{
+    if(!deleteId) return;
+    const btn=document.getElementById('confirmDeptDelete');
+    btn.disabled=true;btn.textContent='Deleting…';
+    try{
+      const res=await fetch(`${API}/api/v1/departments/${deleteId}`,{method:'DELETE',headers:authH()});
+      const data=await res.json();
+      if(!res.ok) throw new Error(data.message||'Delete failed');
+      toast('success','Department Deleted','Department removed successfully.');
+      closeModal('deptDeleteModal');
+      loadDepts();
+    }catch(err){toast('error','Error',err.message);}
+    finally{btn.disabled=false;btn.textContent='Delete';deleteId=null;}
+  });
+
+  loadDepts();
+</script>
+</body>
+</html>
