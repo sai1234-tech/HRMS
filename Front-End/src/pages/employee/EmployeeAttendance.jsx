@@ -3,7 +3,7 @@ import EmployeeHeader from "../../components/employee/EmployeeHeader";
 import Loader from "../../components/common/Loader";
 import ErrorMessage from "../../components/common/ErrorMessage";
 import { useAttendance } from "../../hooks/useAttendance";
-import { formatDate, formatTime } from "../../utils/date";
+import { formatDate, formatTime, getLocalDateString } from "../../utils/date";
 import "../../styles/employee/attendance.css";
 
 function EmployeeAttendance() {
@@ -13,68 +13,10 @@ function EmployeeAttendance() {
 
   const rawList = attendance || [];
 
-  // Default sample history if backend has no records yet
+  // Strict user attendance records (no cross-user sample fallbacks)
   const attendanceRecords = useMemo(() => {
-    if (rawList.length > 0) return rawList;
-    return [
-      {
-        id: "att-1",
-        date: "2026-09-18",
-        checkIn: todayAttendance?.checkIn || "2026-09-18T09:12:00.000Z",
-        checkOut: todayAttendance?.checkOut || null,
-        workingHours: todayAttendance?.checkIn && !todayAttendance?.checkOut ? "In Progress" : "8.2",
-        status: todayAttendance?.status || "Present",
-      },
-      {
-        id: "att-2",
-        date: "2026-09-17",
-        checkIn: "2026-09-17T09:18:00.000Z",
-        checkOut: "2026-09-17T18:30:00.000Z",
-        workingHours: "8.5",
-        status: "Present",
-      },
-      {
-        id: "att-3",
-        date: "2026-09-16",
-        checkIn: "2026-09-16T09:42:00.000Z",
-        checkOut: "2026-09-16T18:40:00.000Z",
-        workingHours: "8.0",
-        status: "Late",
-      },
-      {
-        id: "att-4",
-        date: "2026-09-15",
-        checkIn: "2026-09-15T09:08:00.000Z",
-        checkOut: "2026-09-15T18:15:00.000Z",
-        workingHours: "8.3",
-        status: "Present",
-      },
-      {
-        id: "att-5",
-        date: "2026-09-14",
-        checkIn: "2026-09-14T09:15:00.000Z",
-        checkOut: "2026-09-14T18:12:00.000Z",
-        workingHours: "8.1",
-        status: "Present",
-      },
-      {
-        id: "att-6",
-        date: "2026-09-11",
-        checkIn: "2026-09-11T09:10:00.000Z",
-        checkOut: "2026-09-11T18:25:00.000Z",
-        workingHours: "8.4",
-        status: "Present",
-      },
-      {
-        id: "att-7",
-        date: "2026-09-10",
-        checkIn: "2026-09-10T09:14:00.000Z",
-        checkOut: "2026-09-10T18:10:00.000Z",
-        workingHours: "8.2",
-        status: "Present",
-      },
-    ];
-  }, [rawList, todayAttendance]);
+    return rawList;
+  }, [rawList]);
 
   // Metrics
   const totalDays = attendanceRecords.length;
@@ -84,7 +26,7 @@ function EmployeeAttendance() {
   const lateDays = attendanceRecords.filter((r) =>
     String(r.status || "").toLowerCase() === "late"
   ).length;
-  const presenceRate = totalDays ? Math.round((presentDays / totalDays) * 100) : 96;
+  const presenceRate = totalDays ? Math.round((presentDays / totalDays) * 100) : 0;
 
   // Filtered List
   const filteredList = useMemo(() => {
@@ -94,7 +36,7 @@ function EmployeeAttendance() {
         String(rec.status || "").toLowerCase() === statusFilter.toLowerCase();
       const matchDate =
         !searchDate ||
-        String(rec.date || "").includes(searchDate);
+        getLocalDateString(rec.date) === searchDate;
       return matchStatus && matchDate;
     });
   }, [attendanceRecords, statusFilter, searchDate]);
@@ -287,10 +229,10 @@ function EmployeeAttendance() {
         {/* =====================================================
             ATTENDANCE LEDGER TABLE & FILTERS
         ===================================================== */}
-        {loading || (error && error.toLowerCase().includes("authorization")) ? (
+        {loading || (error && String(typeof error === "string" ? error : error?.message || "").toLowerCase().includes("authorization")) ? (
           <Loader label="Loading attendance history..." />
         ) : error ? (
-          <ErrorMessage message={error} onRetry={reload} />
+          <ErrorMessage message={typeof error === "string" ? error : error?.message || "Failed to load attendance"} onRetry={reload} />
         ) : (
           <div className="att-table-panel">
             <div className="att-table-toolbar">
@@ -378,7 +320,9 @@ function EmployeeAttendance() {
                           ⏱️ {rec.workingHours || "8.2"} hrs
                         </span>
                       </td>
-                      <td style={{ color: "#64748b" }}>45 mins</td>
+                      <td style={{ color: "#64748b" }}>
+                        {rec.checkIn ? `${rec.breakDuration || 45} mins` : "0 mins"}
+                      </td>
                       <td>
                         <span
                           className={`status-chip-badge ${

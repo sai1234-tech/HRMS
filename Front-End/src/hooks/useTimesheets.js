@@ -9,69 +9,9 @@ import {
 } from "../services/timesheetService";
 import { useSyncRefresh } from "../utils/syncManager";
 
-// Fallback entries for frontend simulation since backend schema might lack these fields
-const generateMockEntries = () => {
-  const today = new Date();
-  const d = (offset) => new Date(today.getTime() + offset * 86400000).toISOString().slice(0, 10);
-  
-  return [
-    {
-      _id: "ts-1",
-      date: d(0), // Today
-      project: "HRMS Enterprise Core",
-      task: "Employee Compensation & Payslip UI Engine",
-      startTime: `${d(0)}T09:30:00.000Z`,
-      endTime: `${d(0)}T18:30:00.000Z`,
-      hours: 8.25,
-      status: "draft",
-      updatedAt: new Date().toISOString(),
-    },
-    {
-      _id: "ts-2",
-      date: d(-1),
-      project: "HRMS Enterprise Core",
-      task: "Department Directory",
-      startTime: `${d(-1)}T09:15:00.000Z`,
-      endTime: `${d(-1)}T18:15:00.000Z`,
-      hours: 8.25,
-      status: "rejected",
-      rejectionReason: "Please provide more details on the exact modules touched.",
-      reviewer: "Marcus Vance",
-      updatedAt: new Date(today.getTime() - 86400000).toISOString(),
-    },
-    {
-      _id: "ts-3",
-      date: d(-2),
-      project: "Quadratic Cloud Platform",
-      task: "REST API Microservice Performance",
-      startTime: `${d(-2)}T09:30:00.000Z`,
-      endTime: `${d(-2)}T18:30:00.000Z`,
-      hours: 8.25,
-      status: "submitted",
-      submittedAt: new Date(today.getTime() - 172800000).toISOString(),
-      updatedAt: new Date(today.getTime() - 172800000).toISOString(),
-    },
-    {
-      _id: "ts-4",
-      date: d(-3),
-      project: "Quadratic Cloud Platform",
-      task: "Automated Unit Tests",
-      startTime: `${d(-3)}T09:00:00.000Z`,
-      endTime: `${d(-3)}T17:45:00.000Z`,
-      hours: 8.0,
-      status: "approved",
-      submittedAt: new Date(today.getTime() - 259200000).toISOString(),
-      reviewer: "Sarah Chen",
-    },
-  ];
-};
-
 function normalizeWeek(response) {
   const data = response?.data || response || {};
   let entries = Array.isArray(data.entries) ? data.entries : [];
-  if (entries.length === 0) {
-    entries = generateMockEntries();
-  }
 
   // Calculate unsubmitted for today (EOD check helper)
   const todayDateStr = new Date().toISOString().slice(0, 10);
@@ -120,7 +60,7 @@ export function useTimesheets() {
     loadWeek();
   }, [loadWeek]);
 
-  useSyncRefresh(() => loadWeek(activeDate, true), { interval: 300, silent: true });
+  useSyncRefresh(() => loadWeek(activeDate, true), { interval: 30000, silent: true });
 
   const performAction = async (action) => {
     await action();

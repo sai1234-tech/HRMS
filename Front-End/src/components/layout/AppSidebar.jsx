@@ -41,7 +41,8 @@ function AppSidebar() {
   }, [toggleCollapse]);
 
   const role = normalizeRole(user);
-  const isEmployee = role === "employee";
+  const isEmployee = role === "employee" || role === "manager";
+  const isManager = role === "manager" || role === "admin";
   const isHr = role === "hr";
   const isAdmin = role === "admin";
 
@@ -200,7 +201,26 @@ function AppSidebar() {
             </>
           )}
 
-          {/* 2. HR NAVIGATION */}
+          {/* 2. MANAGER NAVIGATION */}
+          {isManager && (
+            <div className="sidebar-nav-group">
+              {!isCollapsed && <span className="sidebar-group-label">MANAGER WORKSPACE</span>}
+              <NavLink to="/manager/dashboard" end className="sidebar-nav-link" title="Team Approvals & Overview">
+                <span className="nav-item-icon">👥</span>
+                {!isCollapsed && <span className="nav-item-label">Team Approvals</span>}
+              </NavLink>
+              <NavLink to="/manager/projects" end className="sidebar-nav-link" title="Realtime Active Projects">
+                <span className="nav-item-icon">🚀</span>
+                {!isCollapsed && <span className="nav-item-label">Realtime Projects</span>}
+              </NavLink>
+              <NavLink to="/hr/performance" end className="sidebar-nav-link" title="Appraisals & Performance">
+                <span className="nav-item-icon">🎯</span>
+                {!isCollapsed && <span className="nav-item-label">Appraisals</span>}
+              </NavLink>
+            </div>
+          )}
+
+          {/* 3. HR NAVIGATION */}
           {isHr && (
             <>
               <div className="sidebar-nav-group">
@@ -249,7 +269,7 @@ function AppSidebar() {
                   <span className="nav-item-icon">⏱️</span>
                   {!isCollapsed && <span className="nav-item-label">Timesheets</span>}
                 </NavLink>
-                <NavLink to="/employee/performance" end className="sidebar-nav-link" title="Appraisals & Performance">
+                <NavLink to="/hr/performance" end className="sidebar-nav-link" title="Appraisals & Performance">
                   <span className="nav-item-icon">🎯</span>
                   {!isCollapsed && <span className="nav-item-label">Appraisals</span>}
                 </NavLink>

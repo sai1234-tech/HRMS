@@ -35,7 +35,7 @@ export function useHRPayroll(filters) {
     load();
   }, [load]);
 
-  useSyncRefresh(load, { interval: 300, silent: true });
+  useSyncRefresh(load, { interval: 30000, silent: true });
 
   const generate = async (data) => {
     await generatePayroll(data);

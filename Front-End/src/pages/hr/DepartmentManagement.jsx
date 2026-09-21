@@ -105,19 +105,27 @@ function DepartmentManagement() {
     setForm((current) => ({ ...current, [name]: value }));
   };
 
-  // Smart manager autocomplete handler
-  const handleManagerChange = (event) => {
-    const val = event.target.value;
-    const matchedEmployee = employeeList.find((emp) => {
-      const fullName = `${emp.firstName || ""} ${emp.lastName || ""}`.trim() || emp.name;
-      return fullName.toLowerCase() === val.toLowerCase();
-    });
+  // Smart manager select handler
+  const handleManagerSelectChange = (event) => {
+    const email = event.target.value;
+    if (!email) {
+      setForm((current) => ({
+        ...current,
+        managerName: "",
+        managerEmail: "",
+      }));
+      return;
+    }
 
-    setForm((current) => ({
-      ...current,
-      managerName: val,
-      managerEmail: matchedEmployee?.email || current.managerEmail,
-    }));
+    const matchedEmployee = employeeList.find((emp) => emp.email === email);
+    if (matchedEmployee) {
+      const fullName = `${matchedEmployee.firstName || ""} ${matchedEmployee.lastName || ""}`.trim() || matchedEmployee.name || matchedEmployee.email;
+      setForm((current) => ({
+        ...current,
+        managerName: fullName,
+        managerEmail: email,
+      }));
+    }
   };
 
   const resetForm = () => {
@@ -354,42 +362,41 @@ function DepartmentManagement() {
               </label>
 
               <label>
-                Manager Name
-                <input
-                  name="managerName"
-                  value={form.managerName}
-                  onChange={handleManagerChange}
-                  list="employee-managers-list"
-                  placeholder="Select or enter manager name"
-                  autoComplete="off"
-                />
-                <datalist id="employee-managers-list">
-                  {employeeList.map((emp) => {
+                Department Manager
+                <select
+                  name="managerEmail"
+                  value={form.managerEmail}
+                  onChange={handleManagerSelectChange}
+                >
+                  <option value="">-- Select a Manager --</option>
+                  {employeeList
+                    .filter((emp) => emp.user?.role === "manager" || emp.user?.role === "hr" || emp.user?.role === "admin")
+                    .map((emp) => {
                     const fullName =
                       `${emp.firstName || ""} ${emp.lastName || ""}`.trim() ||
                       emp.name ||
                       emp.email;
                     const designation = emp.employment?.designation
-                      ? ` (${emp.employment.designation})`
+                      ? ` - ${emp.employment.designation}`
                       : "";
                     return (
-                      <option key={emp._id || emp.id} value={fullName}>
-                        {emp.email}
-                        {designation}
+                      <option key={emp._id || emp.id} value={emp.email}>
+                        {fullName} {designation}
                       </option>
                     );
                   })}
-                </datalist>
+                </select>
               </label>
 
               <label>
-                Manager Email
+                Manager Email (Auto-filled)
                 <input
-                  name="managerEmail"
+                  name="managerEmailDisplay"
                   type="email"
                   value={form.managerEmail}
-                  onChange={setField}
-                  placeholder="manager@company.com"
+                  readOnly
+                  placeholder="Select a manager above"
+                  style={{ backgroundColor: "#f3f4f6", cursor: "not-allowed", color: "#6b7280" }}
                 />
               </label>
 
@@ -518,6 +525,7 @@ function DepartmentManagement() {
                     <th>Code</th>
                     <th>Manager</th>
                     <th>Location</th>
+                    <th>Headcount</th>
                     <th>Description</th>
                     <th>Status</th>
                     <th className="actions-header">Actions</th>
@@ -639,6 +647,29 @@ function DepartmentManagement() {
                             ) : (
                               <span className="unassigned-text">-</span>
                             )}
+                          </td>
+
+                          {/* Headcount & Team Members Column */}
+                          <td>
+                            <div className="dept-team-members" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span style={{ fontWeight: '600', color: '#111827' }}>
+                                  {employeeList.filter(e => e.employment?.department === department.departmentName).length}
+                                </span>
+                                <span style={{ fontSize: '0.8rem', color: '#6b7280' }}>staff members</span>
+                              </div>
+                              <div style={{ fontSize: '0.75rem', color: '#4b5563', maxWidth: '200px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={
+                                employeeList
+                                  .filter(e => e.employment?.department === department.departmentName)
+                                  .map(e => `${e.employeeCode || ''} ${e.firstName || ''} ${e.lastName || ''}`.trim() || e.name || e.email)
+                                  .join(', ')
+                              }>
+                                {employeeList
+                                  .filter(e => e.employment?.department === department.departmentName)
+                                  .map(e => `${e.firstName || ''} ${e.lastName || ''}`.trim() || e.name || e.email)
+                                  .join(', ') || <span style={{ color: '#9ca3af', fontStyle: 'italic' }}>No employees assigned</span>}
+                              </div>
+                            </div>
                           </td>
 
                           {/* Description */}

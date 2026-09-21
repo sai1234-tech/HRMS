@@ -11,6 +11,7 @@ const payrollRoutes = require("./routes/payroll.routes");
 const documentRoutes = require("./routes/document.routes");
 const errorHandler = require("./middleware/errorHandler");
 const myProfileRoutes = require("./routes/myProfileRoutes");
+const ticketRoutes = require("./routes/ticket.routes");
 const app = express();
 
 // =====================================================
@@ -142,6 +143,9 @@ app.get("/health", (req, res) => {
 // ERROR HANDLER
 // =====================================================
 
+const managerRoutes = require("./routes/manager.routes");
+const performanceRoutes = require("./routes/performance.routes");
+
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/employees", employeeRoutes);
 app.use("/api/v1/employee/me", myProfileRoutes);
@@ -151,6 +155,9 @@ app.use("/api/v1/leaves", leaveRoutes);
 app.use("/api/v1/timesheets", timesheetRoutes);
 app.use("/api/v1/payroll", payrollRoutes);
 app.use("/api/v1/documents", documentRoutes);
+app.use("/api/v1/manager", managerRoutes);
+app.use("/api/v1/performance", performanceRoutes);
+app.use("/api/v1/tickets", ticketRoutes);
 
 app.use(errorHandler);
 

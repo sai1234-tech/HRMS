@@ -24,7 +24,7 @@ export function useEmployee() {
     loadEmployee();
   }, [loadEmployee]);
 
-  useSyncRefresh(loadEmployee, { interval: 300, silent: true });
+  useSyncRefresh(loadEmployee, { interval: 30000, silent: true });
 
   return { employee, loading, error, reload: loadEmployee };
 }

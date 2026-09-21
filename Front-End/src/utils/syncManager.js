@@ -20,6 +20,8 @@ export function broadcastDataChange(category = "general", details = {}) {
   }
 }
 
+export const isBackgroundSync = { current: false };
+
 /**
  * Custom hook to keep any component or data hook synchronized with backend changes in milliseconds.
  * Triggers refresh on:
@@ -31,7 +33,7 @@ export function broadcastDataChange(category = "general", details = {}) {
  */
 export function useSyncRefresh(callback, options = {}) {
   const {
-    interval = 3500,
+    interval = 30000, // Increased default from 3500 to 30000 to prevent backend spam
     enabled = true,
     silent = true,
   } = options;
@@ -44,17 +46,42 @@ export function useSyncRefresh(callback, options = {}) {
 
     let isDestroyed = false;
     let isFetching = false;
+    let errorCount = 0; // Track consecutive errors
+    let timerId = null;
 
-    const triggerRefresh = async () => {
+    const scheduleNextPoll = () => {
+      if (isDestroyed || !interval || interval <= 0) return;
+      
+      // Exponential backoff: max 2 minutes (120000ms)
+      const currentInterval = Math.min(interval * Math.pow(2, errorCount), 120000);
+      
+      timerId = setTimeout(() => {
+        if (document.visibilityState === "visible") {
+          triggerRefresh(true);
+        } else {
+          // If hidden, just schedule next check without fetching
+          scheduleNextPoll();
+        }
+      }, currentInterval);
+    };
+
+    const triggerRefresh = async (isPoll = false) => {
       if (isDestroyed || isFetching) return;
       if (typeof callbackRef.current === "function") {
         try {
           isFetching = true;
+          isBackgroundSync.current = true;
           await callbackRef.current(silent);
+          errorCount = 0; // Reset on success
         } catch {
           // Silent failure during background sync to avoid user disruption
+          errorCount++; // Increase backoff multiplier on failure
         } finally {
+          isBackgroundSync.current = false;
           isFetching = false;
+          if (isPoll) {
+            scheduleNextPoll();
+          }
         }
       }
     };
@@ -88,15 +115,8 @@ export function useSyncRefresh(callback, options = {}) {
     window.addEventListener("storage", handleStorage);
     document.addEventListener("visibilitychange", handleVisibility);
 
-    // 5. Periodic visible background sync
-    let timerId = null;
-    if (interval && interval > 0) {
-      timerId = setInterval(() => {
-        if (document.visibilityState === "visible") {
-          triggerRefresh();
-        }
-      }, interval);
-    }
+    // 5. Start periodic visible background sync
+    scheduleNextPoll();
 
     return () => {
       isDestroyed = true;
@@ -104,7 +124,7 @@ export function useSyncRefresh(callback, options = {}) {
       window.removeEventListener(HRMS_SYNC_EVENT, handleCustomSync);
       window.removeEventListener("storage", handleStorage);
       document.removeEventListener("visibilitychange", handleVisibility);
-      if (timerId) clearInterval(timerId);
+      if (timerId) clearTimeout(timerId);
     };
   }, [enabled, interval, silent]);
 }

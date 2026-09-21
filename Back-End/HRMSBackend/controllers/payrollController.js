@@ -93,65 +93,123 @@ const getEmployeeByUser = async (userId, email) => {
   return employee;
 };
 
-const formatPayroll = (payroll) => ({
-  id: payroll._id,
-  employee: payroll.employee,
-  month: payroll.month,
-  basicSalary: payroll.basicSalary,
-  allowances: payroll.allowances,
-  bonus: payroll.bonus,
-  tax: payroll.tax,
-  pf: payroll.pf,
-  deduction: payroll.deduction,
-  totalDeductions: payroll.totalDeductions,
-  grossSalary: payroll.grossSalary,
-  netSalary: payroll.netSalary,
-  status: payroll.status,
-  generatedAt: payroll.generatedAt,
-});
+const deriveSalaryBreakdown = (rawSalary) => {
+  const numSalary = Number(rawSalary || 0);
+  const annualSalary = numSalary > 0 && numSalary < 300000 ? numSalary * 12 : numSalary;
+  const monthlyGross = Math.round(annualSalary / 12);
+
+  const basicSalary = Math.round(monthlyGross * 0.5);
+  const allowances = Math.round(monthlyGross * 0.5);
+  const pf = monthlyGross > 0 ? Math.min(Math.round(basicSalary * 0.12), 3600) : 0;
+  const tax = monthlyGross > 0 ? 200 : 0;
+  const deduction = Math.round(monthlyGross * 0.08);
+  const totalDeductions = pf + tax + deduction;
+  const netSalary = Math.max(0, monthlyGross - totalDeductions);
+
+  return {
+    annualSalary,
+    monthlyGross,
+    basicSalary,
+    allowances,
+    pf,
+    tax,
+    deduction,
+    totalDeductions,
+    netSalary,
+  };
+};
+
+const formatPayroll = (payroll) => {
+  if (!payroll) return null;
+  const basicSalary = Number(payroll.basicSalary || 0);
+  const allowances = Number(payroll.allowances || 0);
+  const bonus = Number(payroll.bonus || 0);
+  const tax = Number(payroll.tax || 0);
+  const pf = Number(payroll.pf || 0);
+  const deduction = Number(payroll.deduction || 0);
+  const rawGross = Number(payroll.grossSalary || (basicSalary + allowances + bonus));
+  const grossSalary = rawGross >= 300000 ? Math.round(rawGross / 12) : rawGross;
+  const totalDeductions = Number(payroll.totalDeductions ?? (tax + pf + deduction));
+  const netSalary = Number(payroll.netSalary ?? Math.max(0, grossSalary - totalDeductions));
+  const annualSalary = grossSalary * 12;
+
+  return {
+    id: payroll._id,
+    employee: payroll.employee,
+    month: payroll.month,
+    annualSalary,
+    monthlySalary: grossSalary,
+    basicSalary,
+    allowances,
+    bonus,
+    tax,
+    pf,
+    deduction,
+    totalDeductions,
+    grossSalary,
+    netSalary,
+    status: payroll.status,
+    generatedAt: payroll.generatedAt,
+  };
+};
 
 const buildSalarySummary = (employee, payroll, month = new Date()) => {
-  const basicSalary = Number(employee?.employment?.salary || 0);
   const safeMonth = month instanceof Date ? month : parseMonth(month);
 
-  if (!payroll) {
+  if (payroll) {
     return {
+      ...formatPayroll(payroll),
       employeeId: employee?._id || null,
       employeeCode: employee?.employeeCode || null,
-      month: safeMonth,
-      basicSalary,
-      grossSalary: basicSalary,
-      netSalary: basicSalary,
-      allowances: 0,
-      bonus: 0,
-      tax: 0,
-      pf: 0,
-      deduction: 0,
-      status: "not_generated",
-      message: "Awaiting payroll run",
+      message:
+        payroll.status === "generated"
+          ? "Payroll generated"
+          : "Awaiting payroll run",
       currency: "INR",
     };
   }
 
+  const breakdown = deriveSalaryBreakdown(employee?.employment?.salary);
+
   return {
     employeeId: employee?._id || null,
     employeeCode: employee?.employeeCode || null,
-    month: payroll.month,
-    basicSalary: payroll.basicSalary,
-    grossSalary: payroll.grossSalary,
-    netSalary: payroll.netSalary,
-    allowances: payroll.allowances,
-    bonus: payroll.bonus,
-    tax: payroll.tax,
-    pf: payroll.pf,
-    deduction: payroll.deduction,
-    status: payroll.status,
-    message:
-      payroll.status === "generated"
-        ? "Payroll generated"
-        : "Awaiting payroll run",
+    month: safeMonth,
+    annualSalary: breakdown.annualSalary,
+    monthlySalary: breakdown.monthlyGross,
+    basicSalary: breakdown.basicSalary,
+    allowances: breakdown.allowances,
+    bonus: 0,
+    tax: breakdown.tax,
+    pf: breakdown.pf,
+    deduction: breakdown.deduction,
+    totalDeductions: breakdown.totalDeductions,
+    grossSalary: breakdown.monthlyGross,
+    netSalary: breakdown.netSalary,
+    status: "not_generated",
+    message: "Awaiting payroll run",
     currency: "INR",
   };
+};
+
+const isBeforeJoiningMonth = (employee, monthDate) => {
+  const joiningDateRaw =
+    employee?.employment?.joiningDate ||
+    employee?.dateOfJoining ||
+    employee?.joiningDate;
+
+  if (!joiningDateRaw) return false;
+  const joiningDate = new Date(joiningDateRaw);
+  if (isNaN(joiningDate.getTime())) return false;
+
+  const joiningMonthStart = new Date(
+    Date.UTC(joiningDate.getUTCFullYear(), joiningDate.getUTCMonth(), 1)
+  );
+  const requestedMonthStart = new Date(
+    Date.UTC(monthDate.getUTCFullYear(), monthDate.getUTCMonth(), 1)
+  );
+
+  return requestedMonthStart < joiningMonthStart;
 };
 
 const viewMySalary = async (req, res) => {
@@ -166,6 +224,20 @@ const viewMySalary = async (req, res) => {
     }
 
     const month = parseMonth(req.query.month);
+
+    if (isBeforeJoiningMonth(employee, month)) {
+      return res.status(200).json({
+        success: true,
+        data: {
+          employeeId: employee._id,
+          employeeCode: employee.employeeCode,
+          month,
+          isBeforeJoining: true,
+          status: "not_applicable",
+          message: "Payroll is not applicable prior to your joining date",
+        },
+      });
+    }
 
     const payroll = await Payroll.findOne({
       employee: employee._id,
@@ -195,13 +267,27 @@ const getMyPayslip = async (req, res, next) => {
         .json({ success: false, message: "Employee profile not found" });
     }
 
-  const payroll = await Payroll.findOne({
-  employee: employee._id,
-  month
-}).populate(
-  "employee",
-  "employeeCode firstName lastName email employment.department designation"
-);
+    if (isBeforeJoiningMonth(employee, month)) {
+      return res.status(200).json({
+        success: true,
+        data: {
+          employeeId: employee._id,
+          employeeCode: employee.employeeCode,
+          month,
+          isBeforeJoining: true,
+          status: "not_applicable",
+          message: "Payslip is not applicable prior to your joining date",
+        },
+      });
+    }
+
+    const payroll = await Payroll.findOne({
+      employee: employee._id,
+      month,
+    }).populate(
+      "employee",
+      "employeeCode firstName lastName email employment.department designation"
+    );
 
     if (!payroll) {
       return res.status(200).json({
@@ -243,6 +329,13 @@ const downloadMyPayslip = async (req, res, next) => {
     // ==========================================
 
     const month = parseMonth(req.query.month);
+
+    if (isBeforeJoiningMonth(employee, month)) {
+      return res.status(400).json({
+        success: false,
+        message: "Payslips cannot be downloaded for periods prior to your date of joining",
+      });
+    }
 
     // ==========================================
     // FIND PAYROLL
@@ -663,17 +756,41 @@ const downloadMyPayslip = async (req, res, next) => {
 const generatePayroll = async (req, res, next) => {
   try {
     const month = parseMonth(req.body.month);
-    const employees = await Employee.find({ "employment.status": "Active" });
+    const employees = await Employee.find({ "employment.status": { $ne: "Terminated" } });
     const results = [];
 
     for (const employee of employees) {
+      if (isBeforeJoiningMonth(employee, month)) {
+        continue;
+      }
+
+      const breakdown = deriveSalaryBreakdown(employee.employment?.salary);
+
+      const basicSalary =
+        req.body.basicSalary !== undefined
+          ? Number(req.body.basicSalary)
+          : breakdown.basicSalary;
+      const allowances =
+        req.body.allowances !== undefined
+          ? Number(req.body.allowances)
+          : breakdown.allowances;
+      const bonus = req.body.bonus || 0;
+      const tax =
+        req.body.tax !== undefined ? Number(req.body.tax) : breakdown.tax;
+      const pf =
+        req.body.pf !== undefined ? Number(req.body.pf) : breakdown.pf;
+      const deduction =
+        req.body.deduction !== undefined
+          ? Number(req.body.deduction)
+          : breakdown.deduction;
+
       const amounts = calculatePayroll({
-        basicSalary: employee.employment?.salary || 0,
-        allowances: req.body.allowances || 0,
-        bonus: req.body.bonus || 0,
-        tax: req.body.tax || 0,
-        pf: req.body.pf || 0,
-        deduction: req.body.deduction || 0,
+        basicSalary,
+        allowances,
+        bonus,
+        tax,
+        pf,
+        deduction,
       });
 
       const payroll = await Payroll.findOneAndUpdate(
@@ -692,14 +809,14 @@ const generatePayroll = async (req, res, next) => {
           runValidators: true,
           setDefaultsOnInsert: true,
         },
-      );
+      ).populate("employee", "employeeCode firstName lastName email employment.department employment.designation employment.salary");
 
       results.push(payroll);
     }
 
     return res.status(200).json({
       success: true,
-      message: "Payroll generated successfully",
+      message: `Payroll generated successfully for ${results.length} employees`,
       data: {
         month,
         count: results.length,
@@ -719,9 +836,9 @@ const updateEmployeeSalary = async (req, res, next) => {
         .json({ success: false, message: "Invalid employee ID" });
     }
 
-    const salary = Number(req.body.salary);
+    const inputSalary = Number(req.body.salary);
 
-    if (!Number.isFinite(salary) || salary < 0) {
+    if (!Number.isFinite(inputSalary) || inputSalary < 0) {
       return res
         .status(400)
         .json({
@@ -730,9 +847,11 @@ const updateEmployeeSalary = async (req, res, next) => {
         });
     }
 
+    const annualSalary = inputSalary > 0 && inputSalary < 300000 ? inputSalary * 12 : inputSalary;
+
     const employee = await Employee.findByIdAndUpdate(
       req.params.employeeId,
-      { $set: { "employment.salary": salary } },
+      { $set: { "employment.salary": annualSalary } },
       { returnDocument: "after", runValidators: true },
     ).select("employeeCode firstName lastName email employment.salary");
 
@@ -742,9 +861,24 @@ const updateEmployeeSalary = async (req, res, next) => {
         .json({ success: false, message: "Employee not found" });
     }
 
+    const currentMonth = parseMonth(new Date().toISOString().slice(0, 7));
+    const existingPayroll = await Payroll.findOne({ employee: employee._id, month: currentMonth });
+    if (existingPayroll) {
+      const breakdown = deriveSalaryBreakdown(annualSalary);
+      const amounts = calculatePayroll({
+        basicSalary: breakdown.basicSalary,
+        allowances: breakdown.allowances,
+        bonus: existingPayroll.bonus || 0,
+        tax: breakdown.tax,
+        pf: breakdown.pf,
+        deduction: breakdown.deduction,
+      });
+      await Payroll.findByIdAndUpdate(existingPayroll._id, { $set: { ...amounts } });
+    }
+
     return res.status(200).json({
       success: true,
-      message: "Employee salary updated",
+      message: "Employee salary updated successfully",
       data: employee,
     });
   } catch (error) {
@@ -755,20 +889,45 @@ const updateEmployeeSalary = async (req, res, next) => {
 const getPayroll = async (req, res, next) => {
   try {
     const filter = {};
+    const month = req.query.month ? parseMonth(req.query.month) : parseMonth();
 
-    if (req.query.month) filter.month = parseMonth(req.query.month);
     if (req.query.employeeId) filter.employee = req.query.employeeId;
 
-    const payroll = await Payroll.find(filter)
+    const existingPayrolls = await Payroll.find({ ...filter, month })
       .populate(
         "employee",
-        "employeeCode firstName lastName email employment.department",
+        "employeeCode firstName lastName email dateOfJoining employment.department employment.designation employment.salary employment.status"
       )
-      .sort({ month: -1, createdAt: -1 });
+      .sort({ createdAt: -1 });
 
-    return res
-      .status(200)
-      .json({ success: true, data: payroll.map(formatPayroll) });
+    const existingPayrollMap = new Map();
+    existingPayrolls.forEach((p) => {
+      const empId = p.employee?._id?.toString() || p.employee?.toString();
+      if (empId) existingPayrollMap.set(empId, p);
+    });
+
+    const employees = await Employee.find({ "employment.status": { $ne: "Terminated" } }).sort({ employeeCode: 1 });
+
+    const records = [];
+
+    for (const employee of employees) {
+      if (req.query.employeeId && employee._id.toString() !== req.query.employeeId) {
+        continue;
+      }
+
+      if (isBeforeJoiningMonth(employee, month)) {
+        continue;
+      }
+
+      const existingPayroll = existingPayrollMap.get(employee._id.toString());
+      if (existingPayroll) {
+        records.push(formatPayroll(existingPayroll));
+      } else {
+        records.push(buildSalarySummary(employee, null, month));
+      }
+    }
+
+    return res.status(200).json({ success: true, data: records });
   } catch (error) {
     return next(error);
   }

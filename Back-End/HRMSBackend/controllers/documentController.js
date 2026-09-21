@@ -115,24 +115,68 @@ const uploadEmployeeDocument = async (req, res, next) => {
       });
     }
 
-    const documentType = req.body.documentType || "Other Documents";
+    const sanitizeDocumentType = (type) => {
+      const validEnums = [
+        "Aadhaar / ID Proof",
+        "PAN",
+        "Passport",
+        "Address Proof",
+        "Education Certificates",
+        "Experience Letter",
+        "Offer Letter",
+        "Appointment Letter",
+        "Bank Details",
+        "Salary Documents",
+        "Payslips",
+        "Other Documents",
+        "General Document",
+        "Identity Proof",
+        "Medical Certificate",
+        "Tax Document",
+      ];
+      if (type && validEnums.includes(type)) return type;
+      return "General Document";
+    };
+
+    const documentType = sanitizeDocumentType(req.body.documentType);
     const expiryDate = req.body.expiryDate ? new Date(req.body.expiryDate) : null;
 
-    const createdDocument = await EmployeeDocument.create({
-      employee: employeeId,
-      uploadedBy: req.user.userId,
-      documentType,
-      documentName: req.body.documentName || req.file.originalname,
-      originalName: req.file.originalname,
-      fileName: req.file.filename,
-      filePath: req.file.path,
-      fileUrl: `/api/v1/documents/${req.file.filename}/download`,
-      mimeType: req.file.mimetype,
-      size: req.file.size,
-      expiryDate,
-      isRequired: req.body.isRequired === "true" || req.body.isRequired === true,
-      status: "pending",
-    });
+    let createdDocument;
+    const reqDocId = req.body.documentId || req.body.requestId;
+    if (reqDocId) {
+      const existing = await EmployeeDocument.findById(reqDocId);
+      if (existing) {
+        existing.documentType = documentType;
+        existing.originalName = req.file.originalname;
+        existing.fileName = req.file.filename;
+        existing.filePath = req.file.path;
+        existing.fileUrl = `/api/v1/documents/${req.file.filename}/download`;
+        existing.mimeType = req.file.mimetype;
+        existing.size = req.file.size;
+        existing.status = "pending";
+        existing.uploadedBy = req.user.userId;
+        if (expiryDate) existing.expiryDate = expiryDate;
+        createdDocument = await existing.save();
+      }
+    }
+
+    if (!createdDocument) {
+      createdDocument = await EmployeeDocument.create({
+        employee: employeeId,
+        uploadedBy: req.user.userId,
+        documentType,
+        documentName: req.body.documentName || req.file.originalname,
+        originalName: req.file.originalname,
+        fileName: req.file.filename,
+        filePath: req.file.path,
+        fileUrl: `/api/v1/documents/${req.file.filename}/download`,
+        mimeType: req.file.mimetype,
+        size: req.file.size,
+        expiryDate,
+        isRequired: req.body.isRequired === "true" || req.body.isRequired === true,
+        status: "pending",
+      });
+    }
 
     const document = await buildDocumentResponse(createdDocument);
 
@@ -248,10 +292,20 @@ const downloadDocument = async (req, res, next) => {
       }
     }
 
-    if (!document.filePath || !fs.existsSync(document.filePath)) {
+    let filePath = document.filePath;
+    if (!filePath || !fs.existsSync(filePath)) {
+      if (document.fileName) {
+        const altPath = path.join(__dirname, "..", "uploads", "documents", document.fileName);
+        if (fs.existsSync(altPath)) {
+          filePath = altPath;
+        }
+      }
+    }
+
+    if (!filePath || !fs.existsSync(filePath)) {
       return res.status(404).json({
         success: false,
-        message: "Physical document file is missing",
+        message: "Physical document file is missing on server",
       });
     }
 
@@ -261,7 +315,7 @@ const downloadDocument = async (req, res, next) => {
       `attachment; filename="${document.originalName || document.documentName || "document"}"`
     );
 
-    return fs.createReadStream(document.filePath).pipe(res);
+    return fs.createReadStream(filePath).pipe(res);
   } catch (error) {
     return next(error);
   }
@@ -285,7 +339,7 @@ const RequestDocument = async (req, res, next) => {
       });
     }
 
-    const documentType = req.body.documentType || "Other Documents";
+    const documentType = req.body.documentType ? (["Aadhaar / ID Proof","PAN","Passport","Address Proof","Education Certificates","Experience Letter","Offer Letter","Appointment Letter","Bank Details","Salary Documents","Payslips","Other Documents","General Document","Identity Proof","Medical Certificate","Tax Document"].includes(req.body.documentType) ? req.body.documentType : "General Document") : "General Document";
     const requestRecord = await EmployeeDocument.create({
       employee: employeeId,
       uploadedBy: req.user.userId,

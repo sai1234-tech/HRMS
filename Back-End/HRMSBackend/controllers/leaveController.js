@@ -236,8 +236,20 @@ const applyLeave = async (req, res) => {
         0
       );
 
+    let userAnnualAllocation = Number(type.annualAllocation || 0);
+    const joiningDate = employee.employment?.joiningDate ? new Date(employee.employment.joiningDate) : null;
+    if (joiningDate && !isNaN(joiningDate.getTime())) {
+      const joiningYear = joiningDate.getFullYear();
+      if (joiningYear === currentYear) {
+        const remainingMonths = Math.max(1, 12 - joiningDate.getMonth());
+        userAnnualAllocation = Math.max(1, Math.round((userAnnualAllocation / 12) * remainingMonths));
+      } else if (joiningYear > currentYear) {
+        userAnnualAllocation = 0;
+      }
+    }
+
     const remainingDays =
-      Number(type.annualAllocation) -
+      userAnnualAllocation -
       usedDays;
 
     if (numberOfDays > remainingDays) {
@@ -531,8 +543,20 @@ const getLeaveBalance = async (
         }
       }
 
+      let userAnnualAllocation = Number(type.annualAllocation || 0);
+      const joiningDate = employee.employment?.joiningDate ? new Date(employee.employment.joiningDate) : null;
+      if (joiningDate && !isNaN(joiningDate.getTime())) {
+        const joiningYear = joiningDate.getFullYear();
+        if (joiningYear === year) {
+          const remainingMonths = Math.max(1, 12 - joiningDate.getMonth());
+          userAnnualAllocation = Math.max(1, Math.round((userAnnualAllocation / 12) * remainingMonths));
+        } else if (joiningYear > year) {
+          userAnnualAllocation = 0;
+        }
+      }
+
       const available = Math.max(
-        Number(type.annualAllocation) -
+        userAnnualAllocation -
           used -
           pending,
         0
@@ -545,8 +569,7 @@ const getLeaveBalance = async (
           code: type.code,
         },
 
-        annualAllocation:
-          type.annualAllocation,
+        annualAllocation: userAnnualAllocation,
 
         used,
 

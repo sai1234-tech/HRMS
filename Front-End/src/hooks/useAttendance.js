@@ -44,7 +44,7 @@ export function useAttendance() {
     loadAttendance();
   }, [loadAttendance]);
 
-  useSyncRefresh(loadAttendance, { interval: 300, silent: true });
+  useSyncRefresh(loadAttendance, { interval: 30000, silent: true });
 
   const performAction = async (action) => {
     await action();

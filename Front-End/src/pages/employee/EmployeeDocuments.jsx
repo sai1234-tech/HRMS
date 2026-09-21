@@ -40,6 +40,7 @@ function EmployeeDocuments() {
       setForm((prev) => ({
         ...prev,
         file,
+        type: prev.type || "General Document",
         title: prev.title || file.name.replace(/\.[^/.]+$/, ""),
       }));
     }
@@ -51,6 +52,7 @@ function EmployeeDocuments() {
       setForm((prev) => ({
         ...prev,
         file,
+        type: prev.type || "General Document",
         title: prev.title || file.name.replace(/\.[^/.]+$/, ""),
       }));
     }
@@ -77,8 +79,7 @@ function EmployeeDocuments() {
 
   // Realistic sample corporate documents if backend vault is empty
   const displayDocs = useMemo(() => {
-    if (rawDocs.length > 0) return rawDocs;
-    return [
+    let list = rawDocs.length > 0 ? rawDocs : [
       {
         _id: "doc-1",
         documentType: "Signed Employment Agreement",
@@ -116,7 +117,7 @@ function EmployeeDocuments() {
         description: "Certificate of tax deducted at source issued under Section 203 of the Income-tax Act.",
         status: "verified",
         createdAt: "2025-06-10T12:00:00.000Z",
-        verifiedAt: "2025-06-10T12:00:00.000Z",
+        verifiedAt: "2025-06-11T09:15:00.000Z",
         fileSize: "2.4 MB",
       },
       {
@@ -130,6 +131,17 @@ function EmployeeDocuments() {
         fileSize: "3.1 MB",
       },
     ];
+
+    return list.filter((doc) => {
+      if (
+        (doc.documentType === "General Document" || doc.documentType === "General Document General Document") &&
+        (doc.documentName === "General Document" || !doc.documentName) &&
+        (!doc.fileName || doc.fileName === "General Document")
+      ) {
+        return false;
+      }
+      return true;
+    });
   }, [rawDocs]);
 
   // Counts
@@ -164,17 +176,15 @@ function EmployeeDocuments() {
       setActionError("Please select or drop a document file to upload.");
       return;
     }
-    if (!form.type) {
-      setActionError("Please select a valid document category.");
-      return;
-    }
+
+    const docType = form.type || "General Document";
 
     try {
       setBusy(true);
       await upload(form.file, {
-        documentType: form.type,
+        documentType: docType,
         documentName: form.title || form.file.name,
-        description: form.description || `${form.type} submitted for compliance`,
+        description: form.description || `${docType} submitted for compliance`,
         documentId: form.documentId,
         confidentiality: form.confidentiality,
       });
@@ -202,6 +212,32 @@ function EmployeeDocuments() {
       setMessage("Document uploaded successfully. It is now awaiting HR review.");
     } catch (err) {
       setActionError(err.message || "Failed to upload document.");
+    } finally {
+      setBusy(false);
+      e.target.value = "";
+    }
+  };
+
+  const handleUploadFileForRequest = async (e, reqDoc) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setActionError("");
+    setMessage("");
+    try {
+      setBusy(true);
+      await upload(file, {
+        documentType: reqDoc.documentType || "General Document",
+        documentId: reqDoc._id || reqDoc.id,
+        requestId: reqDoc._id || reqDoc.id,
+        documentName: reqDoc.documentName || reqDoc.documentType || file.name,
+      });
+      setMessage(`Successfully uploaded "${file.name}" for HR request. It is now in HR review.`);
+      window.dispatchEvent(new CustomEvent("hrms:data_changed"));
+      const res = await getMyDocuments();
+      const docs = res.data || res.documents || res || [];
+      if (Array.isArray(docs)) setDocuments(docs);
+    } catch (err) {
+      setActionError(err.message || "Failed to upload requested document.");
     } finally {
       setBusy(false);
       e.target.value = "";
@@ -278,6 +314,17 @@ function EmployeeDocuments() {
     },
   ];
 
+  const scrollToUploadSection = () => {
+    const section = document.getElementById("upload-official-document-section");
+    if (section) {
+      section.scrollIntoView({ behavior: "smooth", block: "start" });
+      const firstInput = section.querySelector("select, input");
+      if (firstInput) {
+        setTimeout(() => firstInput.focus(), 400);
+      }
+    }
+  };
+
   return (
     <>
       <EmployeeHeader />
@@ -306,18 +353,15 @@ function EmployeeDocuments() {
           </div>
 
           <div className="att-hero-actions">
-            <label
+            <button
+              type="button"
               className="att-btn primary"
+              onClick={scrollToUploadSection}
               style={{ cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "0.4rem" }}
+              title="Scroll directly to Upload Official Document form"
             >
-              <span>📤</span> {busy ? "Uploading..." : "Upload Document"}
-              <input
-                type="file"
-                onChange={handleQuickUpload}
-                disabled={busy}
-                style={{ display: "none" }}
-              />
-            </label>
+              <span>📤</span> Upload Document
+            </button>
           </div>
         </section>
 
@@ -434,7 +478,7 @@ function EmployeeDocuments() {
         {/* =====================================================
             UPLOAD PANEL (REALISTIC ENTERPRISE DOCUMENT INGESTION)
         ===================================================== */}
-        <section className="doc-upload-card" aria-label="Upload Document">
+        <section className="doc-upload-card" id="upload-official-document-section" aria-label="Upload Document">
           <div className="doc-upload-header">
             <div className="doc-upload-badge-row">
               <span className="doc-section-pill">
@@ -606,14 +650,19 @@ function EmployeeDocuments() {
                   type="submit"
                   className="att-btn primary upload-submit-btn"
                   disabled={busy || !form.file}
+                  title={!form.file ? "Please select or drop a file to enable upload" : "Upload document for HR verification"}
                 >
                   {busy ? (
                     <>
-                      <span className="btn-spinner" /> Ingesting to Vault...
+                      <span className="btn-spinner" /> Uploading Document...
+                    </>
+                  ) : !form.file ? (
+                    <>
+                      <span>📁</span> Select File to Upload
                     </>
                   ) : (
                     <>
-                      <span>📤</span> Submit & Ingest Document
+                      <span>📤</span> Upload & Save Document
                     </>
                   )}
                 </button>
@@ -625,10 +674,10 @@ function EmployeeDocuments() {
         {/* =====================================================
             DOCUMENT REPOSITORY VAULT
         ===================================================== */}
-        {loading || (error && error.toLowerCase().includes("authorization")) ? (
+        {loading || (error && String(typeof error === "string" ? error : error?.message || "").toLowerCase().includes("authorization")) ? (
           <Loader label="Decrypting and loading documents..." />
         ) : error ? (
-          <ErrorMessage message={error} onRetry={reload} />
+          <ErrorMessage message={typeof error === "string" ? error : error?.message || "Failed to load documents"} onRetry={reload} />
         ) : (
           <section className="doc-vault-panel" aria-label="Document Vault">
             <div className="doc-vault-head">
@@ -667,30 +716,41 @@ function EmployeeDocuments() {
             </div>
 
             <div className="doc-card-grid">
-              {filteredDocs.map((doc) => (
-                <div key={doc._id} className="vault-doc-card">
-                  <div className="doc-card-top">
-                    <div className="doc-type-icon">📄</div>
-                    <div className="doc-meta-info">
-                      <h4>{doc.documentType || doc.documentName || "Document"}</h4>
-                      <p>{doc.description || "Official verified employee record on file."}</p>
-                    </div>
-                  </div>
+              {filteredDocs.map((doc) => {
+                const displayType = doc.documentType || "General Document";
+                const titleText =
+                  doc.originalName && doc.originalName !== displayType
+                    ? doc.originalName
+                    : doc.documentName && doc.documentName !== displayType
+                    ? doc.documentName
+                    : displayType;
 
-                  <div className="doc-card-bottom">
-                    <div className="doc-file-info">
-                      <div className="doc-file-name-wrap">
-                        <span
-                          className="doc-file-name"
-                          title={doc.documentName || "Document.pdf"}
-                        >
-                          {doc.documentName || "Document.pdf"}
-                        </span>
+                const isTitleSameAsType = titleText.toLowerCase() === displayType.toLowerCase();
+
+                return (
+                  <div key={doc._id || doc.id} className="vault-doc-card">
+                    <div className="doc-card-top">
+                      <div className="doc-type-icon">📄</div>
+                      <div className="doc-meta-info">
+                        <h4>{titleText}</h4>
+                        <p>{doc.description || "Official verified employee record on file."}</p>
                       </div>
-                      <small className="doc-file-date">
-                        Uploaded {formatDate(doc.createdAt)} {doc.fileSize && `• ${doc.fileSize}`}
-                      </small>
                     </div>
+
+                    <div className="doc-card-bottom">
+                      <div className="doc-file-info">
+                        <div className="doc-file-name-wrap">
+                          <span
+                            className="doc-file-name"
+                            title={displayType}
+                          >
+                            {isTitleSameAsType ? `Category: ${displayType}` : displayType}
+                          </span>
+                        </div>
+                        <small className="doc-file-date">
+                          Uploaded {formatDate(doc.createdAt)} {doc.fileSize && `• ${doc.fileSize}`}
+                        </small>
+                      </div>
 
                     <div className="doc-actions-cluster">
                       <span
@@ -709,18 +769,35 @@ function EmployeeDocuments() {
                           : "⏳ " + (doc.status || "In Review")}
                       </span>
 
-                      <button
-                        type="button"
-                        className="doc-btn download"
-                        onClick={() => handleDownload(doc)}
-                        title="Download Document"
-                      >
-                        📥 Download
-                      </button>
+                      {(doc.status === "requested" || doc.status === "rejected") ? (
+                        <label
+                          className="doc-btn download"
+                          style={{ background: "#ea580c", color: "white", cursor: "pointer", border: "none", display: "inline-flex", alignItems: "center", gap: "0.35rem" }}
+                          title="Upload requested file"
+                        >
+                          📤 Select & Upload File
+                          <input
+                            type="file"
+                            onChange={(e) => handleUploadFileForRequest(e, doc)}
+                            disabled={busy}
+                            hidden
+                          />
+                        </label>
+                      ) : (
+                        <button
+                          type="button"
+                          className="doc-btn download"
+                          onClick={() => handleDownload(doc)}
+                          title="Download Document"
+                        >
+                          📥 Download
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
-              ))}
+              );
+            })}
             </div>
           </section>
         )}

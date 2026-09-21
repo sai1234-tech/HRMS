@@ -13,6 +13,10 @@ const DOCUMENT_TYPES = [
   "Salary Documents",
   "Payslips",
   "Other Documents",
+  "General Document",
+  "Identity Proof",
+  "Medical Certificate",
+  "Tax Document",
 ];
 
 const documentSchema = new mongoose.Schema(

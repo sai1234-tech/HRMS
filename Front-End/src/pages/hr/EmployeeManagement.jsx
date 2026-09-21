@@ -161,7 +161,7 @@ function EmployeeManagement() {
     setError("");
     try {
       const [empRes, deptRes] = await Promise.all([
-        getAllEmployees(search),
+        getAllEmployees(""),
         getDepartments().catch(() => ({ data: [] })),
       ]);
 
@@ -183,7 +183,7 @@ function EmployeeManagement() {
     } finally {
       if (!silent) setLoading(false);
     }
-  }, [search]);
+  }, []);
 
   useEffect(() => {
     loadEmployees();

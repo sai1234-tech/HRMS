@@ -1,6 +1,6 @@
-
 const Employee = require("../models/Employee");
 const User = require("../models/User");
+const Department = require("../models/Department");
 
 
 // =====================================================
@@ -218,6 +218,20 @@ const createMultipleEmployees = async (
       if (user) {
         employeeObject.user =
           user._id;
+      }
+
+      // ========================================
+      // AUTO-ROUTE MANAGER
+      // ========================================
+      if (employeeObject.employment.department) {
+        const dept = await Department.findOne({ departmentName: employeeObject.employment.department });
+        if (dept && dept.managerEmail) {
+          // Find employee who is the manager
+          const manager = await Employee.findOne({ email: dept.managerEmail.toLowerCase() });
+          if (manager && manager._id.toString() !== (existingEmployee ? existingEmployee._id.toString() : "")) {
+            employeeObject.reportsTo = manager._id;
+          }
+        }
       }
 
       employeeData.push(
@@ -502,6 +516,23 @@ const updateEmployee = async (req, res) => {
         req.body.profilePhoto;
     }
 
+    // ========================================
+    // AUTO-ROUTE MANAGER
+    // ========================================
+    if (employee.employment && employee.employment.department) {
+      const dept = await Department.findOne({ departmentName: employee.employment.department });
+      if (dept && dept.managerEmail) {
+        const manager = await Employee.findOne({ email: dept.managerEmail.toLowerCase() });
+        if (manager && manager._id.toString() !== employee._id.toString()) {
+          employee.reportsTo = manager._id;
+        } else if (!manager) {
+          employee.reportsTo = null;
+        }
+      } else {
+        employee.reportsTo = null;
+      }
+    }
+
     const updatedEmployee =
       await employee.save();
 
@@ -620,9 +651,18 @@ const updateMyProfile = async (req, res) => {
   try {
     const userId = req.user.userId;
 
-    const employee = await Employee.findOne({
+    let employee = await Employee.findOne({
       user: userId,
     });
+
+    if (!employee && req.user?.email) {
+      employee = await Employee.findOne({
+        email: req.user.email.toLowerCase(),
+      });
+      if (employee && !employee.user) {
+        employee.user = userId;
+      }
+    }
 
     if (!employee) {
       return res.status(404).json({
@@ -647,6 +687,10 @@ const updateMyProfile = async (req, res) => {
 
     if (req.body.phone !== undefined) {
       employee.phone = req.body.phone;
+    }
+
+    if (req.body.profilePhoto !== undefined) {
+      employee.profilePhoto = req.body.profilePhoto;
     }
 
     // ---------------------------------------------
@@ -677,9 +721,25 @@ const updateMyProfile = async (req, res) => {
 
     if (req.body.emergencyContact) {
       employee.emergencyContact = {
-        ...employee.emergencyContact.toObject(),
+        ...(employee.emergencyContact ? employee.emergencyContact.toObject() : {}),
         ...req.body.emergencyContact,
       };
+    }
+
+    // ---------------------------------------------
+    // Skills & Recognition
+    // ---------------------------------------------
+
+    if (req.body.skills !== undefined) {
+      employee.skills = Array.isArray(req.body.skills) ? req.body.skills : [];
+    }
+
+    if (req.body.certifications !== undefined) {
+      employee.certifications = Array.isArray(req.body.certifications) ? req.body.certifications : [];
+    }
+
+    if (req.body.awards !== undefined) {
+      employee.awards = Array.isArray(req.body.awards) ? req.body.awards : [];
     }
 
     const updatedEmployee =
@@ -729,9 +789,18 @@ const uploadMyProfilePhoto = async (req, res) => {
     // Find employee
     // ---------------------------------------------
 
-    const employee = await Employee.findOne({
+    let employee = await Employee.findOne({
       user: userId,
     });
+
+    if (!employee && req.user?.email) {
+      employee = await Employee.findOne({
+        email: req.user.email.toLowerCase(),
+      });
+      if (employee && !employee.user) {
+        employee.user = userId;
+      }
+    }
 
     if (!employee) {
       // Delete uploaded file if employee doesn't exist

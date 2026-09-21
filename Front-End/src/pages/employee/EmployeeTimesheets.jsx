@@ -53,66 +53,8 @@ function EmployeeTimesheets() {
 
   const rawEntries = entries || [];
 
-  // Realistic sample entries if backend has no entries for current week yet
   const displayEntries = useMemo(() => {
-    if (rawEntries.length > 0) return rawEntries;
-    return [
-      {
-        _id: "ts-1",
-        date: "2026-09-18",
-        project: "HRMS Enterprise Core",
-        task: "Employee Compensation & Payslip UI Engine",
-        description: "Implemented pixel-perfect PDF export and CTC structure rails.",
-        startTime: "2026-09-18T09:30:00.000Z",
-        endTime: "2026-09-18T18:30:00.000Z",
-        hours: 8.25,
-        status: "draft",
-      },
-      {
-        _id: "ts-2",
-        date: "2026-09-17",
-        project: "HRMS Enterprise Core",
-        task: "Department Directory & Role Autocomplete",
-        description: "Added real-time datalist suggestions and profile dossiers.",
-        startTime: "2026-09-17T09:15:00.000Z",
-        endTime: "2026-09-17T18:15:00.000Z",
-        hours: 8.25,
-        status: "draft",
-      },
-      {
-        _id: "ts-3",
-        date: "2026-09-16",
-        project: "Quadratic Cloud Platform",
-        task: "REST API Microservice Performance Tuning",
-        description: "Optimized database query indexes and caching layers.",
-        startTime: "2026-09-16T09:30:00.000Z",
-        endTime: "2026-09-16T18:30:00.000Z",
-        hours: 8.25,
-        status: "submitted",
-      },
-      {
-        _id: "ts-4",
-        date: "2026-09-15",
-        project: "Quadratic Cloud Platform",
-        task: "Automated Unit Tests & Security Auditing",
-        description: "Added test suites for authentication and token validation.",
-        startTime: "2026-09-15T09:00:00.000Z",
-        endTime: "2026-09-15T17:45:00.000Z",
-        hours: 8.0,
-        status: "approved",
-      },
-      {
-        _id: "ts-5",
-        date: "2026-09-14",
-        project: "Internal Tools",
-        task: "Quarterly Sprint Planning & Architecture Review",
-        description: "Reviewed technical specifications with lead engineers.",
-        startTime: "2026-09-14T09:30:00.000Z",
-        endTime: "2026-09-14T18:30:00.000Z",
-        hours: 8.25,
-        status: "approved",
-      },
-    ];
+    return rawEntries;
   }, [rawEntries]);
 
   const pendingEntries = displayEntries.filter(e => ["draft", "rejected"].includes(e.status));
@@ -254,16 +196,10 @@ function EmployeeTimesheets() {
               className="att-btn primary"
               disabled={draftCount === 0}
               onClick={() => {
-                const drafts = displayEntries.filter((e) => e.status === "draft");
                 const hoursByDate = {};
-                drafts.forEach((d) => {
-                  hoursByDate[d.date] = (hoursByDate[d.date] || 0) + Number(d.hours);
-                });
-                const others = displayEntries.filter((e) => e.status !== "draft");
-                others.forEach((d) => {
-                  if (hoursByDate[d.date] !== undefined) {
-                    hoursByDate[d.date] += Number(d.hours);
-                  }
+                displayEntries.forEach((d) => {
+                  const breakH = (Number(d.breakMinutes) || 45) / 60;
+                  hoursByDate[d.date] = (hoursByDate[d.date] || 0) + Number(d.hours) + breakH;
                 });
 
                 let failedDate = null;
@@ -551,10 +487,10 @@ function EmployeeTimesheets() {
         {/* =====================================================
             WEEK ENTRIES TABLE
         ===================================================== */}
-        {loading || (error && error.toLowerCase().includes("authorization")) ? (
+        {loading || (error && String(typeof error === "string" ? error : error?.message || "").toLowerCase().includes("authorization")) ? (
           <Loader label="Loading timesheets..." />
         ) : error ? (
-          <ErrorMessage message={error} onRetry={() => reload(selectedDate)} />
+          <ErrorMessage message={typeof error === "string" ? error : error?.message || "Failed to load timesheets"} onRetry={() => reload(selectedDate)} />
         ) : (
           <section className="timesheet-table-panel" aria-label="Timesheet Table">
             <div className="timesheet-table-head">

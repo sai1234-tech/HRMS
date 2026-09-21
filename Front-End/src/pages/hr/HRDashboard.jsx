@@ -113,6 +113,18 @@ function HRDashboard() {
     [attendance]
   );
 
+  // Department analytics map
+  const departmentAnalytics = useMemo(() => {
+    const counts = {};
+    employees.forEach(emp => {
+      const dept = emp.employment?.department || "Unassigned";
+      counts[dept] = (counts[dept] || 0) + 1;
+    });
+    return Object.entries(counts)
+      .map(([name, count]) => ({ name, count, percentage: Math.round((count / Math.max(employees.length, 1)) * 100) }))
+      .sort((a, b) => b.count - a.count);
+  }, [employees]);
+
   // Departments list for quick filtering
   const departmentsList = useMemo(() => {
     const set = new Set();
@@ -302,6 +314,41 @@ function HRDashboard() {
               </Link>
             </div>
             <small className="kpi-meta">1-click navigation to all operations</small>
+          </div>
+        </section>
+
+        {/* Department Analytics Visualization Map */}
+        <section className="hr-panel-card analytics-map-section" style={{ marginTop: '24px', padding: '24px', background: '#fff', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
+          <div className="panel-card-header" style={{ marginBottom: '20px' }}>
+            <div>
+              <h2 style={{ margin: 0, fontSize: '1.25rem', color: '#111827' }}>Department Distribution Map</h2>
+              <p style={{ margin: '4px 0 0 0', color: '#6b7280', fontSize: '0.875rem' }}>Workforce analytics and headcount allocation across organization units.</p>
+            </div>
+            <Link to="/hr/organization" className="manage-all-link" style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#4f46e5', fontWeight: '500', textDecoration: 'none' }}>
+              <span>🌳</span> View Full Org Chart →
+            </Link>
+          </div>
+          <div className="department-map-container" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {departmentAnalytics.length === 0 ? (
+              <div style={{ padding: '20px', textAlign: 'center', color: '#9ca3af' }}>No department data available.</div>
+            ) : (
+              departmentAnalytics.map((dept, index) => {
+                const color = avatarColors[index % avatarColors.length];
+                return (
+                  <div key={dept.name} className="dept-map-row" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    <div className="dept-map-label" style={{ width: '150px', fontWeight: '500', color: '#374151', fontSize: '0.9rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {dept.name}
+                    </div>
+                    <div className="dept-map-track" style={{ flex: 1, height: '12px', background: '#f3f4f6', borderRadius: '6px', overflow: 'hidden' }}>
+                      <div className="dept-map-fill" style={{ height: '100%', width: `${dept.percentage}%`, backgroundColor: color.text, borderRadius: '6px', transition: 'width 1s ease-in-out' }}></div>
+                    </div>
+                    <div className="dept-map-stats" style={{ width: '80px', textAlign: 'right', fontSize: '0.875rem' }}>
+                      <strong style={{ color: '#111827' }}>{dept.count}</strong> <span style={{ color: '#6b7280' }}>emp</span>
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
         </section>
 

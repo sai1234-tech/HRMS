@@ -663,58 +663,33 @@ const getMe = async (req, res) => {
     let employee = null;
 
 
-    if (user.role === "employee") {
+    employee = await Employee.findOne({
+      user: user._id,
+    });
 
-      employee =
-        await Employee.findOne({
-          user: user._id,
-        });
+    // ---------------------------------------------
+    // FALLBACK BY EMAIL
+    // ---------------------------------------------
 
+    if (!employee) {
+      employee = await Employee.findOne({
+        email: user.email,
+      });
 
-      // ---------------------------------------------
-      // FALLBACK BY EMAIL
-      // ---------------------------------------------
-
-      if (!employee) {
-
-        employee =
-          await Employee.findOne({
-            email: user.email,
+      if (employee) {
+        if (
+          employee.user &&
+          employee.user.toString() !== user._id.toString()
+        ) {
+          return res.status(409).json({
+            success: false,
+            message:
+              "Employee profile is already linked to another account",
           });
-
-
-        if (employee) {
-
-          if (
-            employee.user &&
-            employee.user.toString() !==
-              user._id.toString()
-          ) {
-            return res.status(409).json({
-              success: false,
-              message:
-                "Employee profile is already linked to another account",
-            });
-          }
-
-          employee.user =
-            user._id;
-
-          await employee.save();
         }
-      }
 
-
-      // ---------------------------------------------
-      // PROFILE NOT FOUND
-      // ---------------------------------------------
-
-      if (!employee) {
-        return res.status(404).json({
-          success: false,
-          message:
-            "Employee profile not found for this account",
-        });
+        employee.user = user._id;
+        await employee.save();
       }
     }
 
@@ -946,6 +921,48 @@ const getAdminSummary = async (_req, res) => {
     return res.status(500).json({ success: false, message: "Failed to load admin summary" });
   }
 };
+const updateMySkills = async (req, res) => {
+  try {
+    let employee = await Employee.findOne({ user: req.user.userId });
+
+    if (!employee && req.user.email) {
+      employee = await Employee.findOne({
+        email: req.user.email.trim().toLowerCase(),
+      });
+      if (employee && !employee.user) {
+        employee.user = req.user.userId;
+      }
+    }
+
+    if (!employee) {
+      return res.status(404).json({
+        success: false,
+        message: "Employee record not found for logged in user",
+      });
+    }
+
+    const { skills, certifications, awards } = req.body;
+
+    if (Array.isArray(skills)) employee.skills = skills;
+    if (Array.isArray(certifications)) employee.certifications = certifications;
+    if (Array.isArray(awards)) employee.awards = awards;
+
+    await employee.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Skills, Certifications & Recognition updated successfully",
+      employee,
+    });
+  } catch (error) {
+    console.error("UPDATE MY SKILLS ERROR:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update skills and credentials",
+    });
+  }
+};
+
 // =====================================================
 // EXPORT
 // =====================================================
@@ -957,4 +974,5 @@ module.exports = {
   createManagedAccount,
   setupFirstAdmin,
   getAdminSummary,
+  updateMySkills,
 };

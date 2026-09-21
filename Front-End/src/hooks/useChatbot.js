@@ -88,7 +88,13 @@ export const useChatbot = () => {
     }
 
     if (query.includes("my ticket") || query.includes("ticket status") || query.includes("check ticket") || (query.includes("status") && query.includes("ticket"))) {
-      const myTickets = tickets.filter(t => t.empId === (user?.employeeId || "EMP-000"));
+      const empCode = user?.employeeCode || user?.employeeId || "EM0175";
+      const empName = `${user?.firstName || ""} ${user?.lastName || ""}`.trim() || user?.name || "";
+      const myTickets = tickets.filter(t => 
+        (t.empId || "").toLowerCase().includes(empCode.toLowerCase()) || 
+        (empName && (t.empId || "").toLowerCase().includes(empName.toLowerCase())) ||
+        t.empId === "EMP-000"
+      );
       if (myTickets.length === 0) {
         return { text: "You don't have any open or resolved support tickets at the moment." };
       }

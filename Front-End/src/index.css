@@ -68,13 +68,16 @@ button:disabled {
 }
 
 #nprogress .bar {
-  background: #176b70;
+  background: linear-gradient(90deg, #176b70, #00d2ff, #176b70);
+  background-size: 200% 100%;
+  animation: nprogress-gradient 2s linear infinite;
   position: fixed;
-  z-index: 1031;
+  z-index: 9999;
   top: 0;
   left: 0;
   width: 100%;
-  height: 4px;
+  height: 5px;
+  box-shadow: 0 1px 4px rgba(0, 210, 255, 0.4);
 }
 
 /* Fancy blur effect */
@@ -84,7 +87,90 @@ button:disabled {
   right: 0px;
   width: 100px;
   height: 100%;
-  box-shadow: 0 0 10px #176b70, 0 0 5px #176b70;
+  box-shadow: 0 0 10px #00d2ff, 0 0 5px #176b70;
   opacity: 1.0;
   transform: rotate(3deg) translate(0px, -4px);
+}
+
+/* Prominent Spinner */
+#nprogress .spinner {
+  display: block;
+  position: fixed;
+  z-index: 9999;
+  top: 20px;
+  right: 20px;
+}
+
+#nprogress .spinner-icon {
+  width: 28px;
+  height: 28px;
+  box-sizing: border-box;
+  border: solid 3px transparent;
+  border-top-color: #00d2ff;
+  border-left-color: #176b70;
+  border-radius: 50%;
+  animation: nprogress-spinner 400ms linear infinite;
+}
+
+@keyframes nprogress-gradient {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+
+@keyframes nprogress-spinner {
+  0%   { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Global API Loader Overlay */
+#global-api-loader {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(241, 244, 246, 0.7);
+  backdrop-filter: blur(4px);
+  z-index: 99999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+#global-api-loader.visible {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.global-api-spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid rgba(23, 107, 112, 0.2);
+  border-left-color: #176b70;
+  border-top-color: #00d2ff;
+  border-radius: 50%;
+  animation: global-spinner-anim 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+.global-api-text {
+  font-weight: 600;
+  color: #176b70;
+  font-size: 1.1rem;
+  letter-spacing: 0.5px;
+  animation: pulse-text 1.5s ease-in-out infinite;
+}
+
+@keyframes global-spinner-anim {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes pulse-text {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
 }

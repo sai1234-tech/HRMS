@@ -80,7 +80,7 @@ function OrganizationHierarchy() {
             lastName: apiEmp.lastName || "Member",
             designation: apiEmp.employment?.designation || apiEmp.designation || "Staff Specialist",
             department: deptName,
-            reportsTo: repId,
+            reportsTo: apiEmp.reportsTo || repId,
             email: apiEmp.email || `${code.toLowerCase()}@quadratics.com`,
             phone: apiEmp.phone || "+91 98201 00000",
             status: apiEmp.employment?.status || "Active",

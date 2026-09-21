@@ -18,6 +18,13 @@ const employeeSchema = new mongoose.Schema(
     // EMPLOYEE INFORMATION
     // ==========================================
 
+    reportsTo: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Employee",
+      default: null,
+      index: true,
+    },
+
     employeeCode: {
       type: String,
       required: [true, "Employee code is required"],
@@ -65,6 +72,24 @@ const employeeSchema = new mongoose.Schema(
 
       dateOfBirth: {
         type: Date,
+      },
+
+      personalEmail: {
+        type: String,
+        trim: true,
+        default: "",
+      },
+
+      altPhone: {
+        type: String,
+        trim: true,
+        default: "",
+      },
+
+      bloodGroup: {
+        type: String,
+        trim: true,
+        default: "",
       },
     },
 
@@ -155,7 +180,7 @@ const employeeSchema = new mongoose.Schema(
     },
 
     // ==========================================
-    // EMERGENCY CONTACT
+    // EMERGENCY CONTACT & MEDICAL
     // ==========================================
 
     emergencyContact: {
@@ -165,7 +190,25 @@ const employeeSchema = new mongoose.Schema(
         default: "",
       },
 
+      relationship: {
+        type: String,
+        trim: true,
+        default: "",
+      },
+
       phone: {
+        type: String,
+        trim: true,
+        default: "",
+      },
+
+      altPhone: {
+        type: String,
+        trim: true,
+        default: "",
+      },
+
+      medicalNotes: {
         type: String,
         trim: true,
         default: "",
@@ -180,6 +223,33 @@ const employeeSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+
+    // ==========================================
+    // SKILLS & RECOGNITION
+    // ==========================================
+
+    skills: {
+      type: [String],
+      default: [],
+    },
+
+    certifications: [
+      {
+        icon: { type: String, default: "📜" },
+        title: { type: String, required: true },
+        issuer: { type: String, default: "" },
+        validity: { type: String, default: "" },
+      },
+    ],
+
+    awards: [
+      {
+        icon: { type: String, default: "🏆" },
+        title: { type: String, required: true },
+        organization: { type: String, default: "" },
+        theme: { type: String, default: "gold" },
+      },
+    ],
   },
   {
     timestamps: true,

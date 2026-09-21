@@ -1,13 +1,40 @@
 import NProgress from "nprogress";
-import { broadcastDataChange } from "../utils/syncManager";
+import { broadcastDataChange, isBackgroundSync } from "../utils/syncManager";
 
-// Configure NProgress (optional, e.g. don't show spinner)
-NProgress.configure({ showSpinner: false });
+// Configure NProgress with spinner enabled for a more effective loading indication
+NProgress.configure({ showSpinner: true, minimum: 0.1, speed: 400 });
 
 const API_BASE_URL = (
   import.meta.env.VITE_API_URL ||
   "/api/v1"
 ).replace(/\/+$/, "");
+
+let activeRequests = 0;
+
+function toggleGlobalLoader(isLoading) {
+  if (isLoading) {
+    activeRequests++;
+  } else {
+    activeRequests = Math.max(0, activeRequests - 1);
+  }
+
+  let overlay = document.getElementById("global-api-loader");
+  
+  if (activeRequests > 0) {
+    if (!overlay) {
+      overlay = document.createElement("div");
+      overlay.id = "global-api-loader";
+      overlay.innerHTML = `
+        <div class="global-api-spinner"></div>
+        <div class="global-api-text">Processing...</div>
+      `;
+      document.body.appendChild(overlay);
+    }
+    overlay.classList.add("visible");
+  } else if (overlay) {
+    overlay.classList.remove("visible");
+  }
+}
 
 export async function apiRequest(endpoint, options = {}) {
   const token = sessionStorage.getItem("hrms_token");
@@ -22,55 +49,80 @@ export async function apiRequest(endpoint, options = {}) {
     ...(options.body instanceof FormData
       ? {}
       : { "Content-Type": "application/json" }),
-    ...(token
-      ? { Authorization: `Bearer ${token}` }
-      : {}),
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...(options.headers || {}),
   };
 
-  let response;
+  console.log(`[API Request] ${url}`);
+  console.log(`[API Request] Token from sessionStorage:`, token ? `${token.substring(0, 10)}...` : null);
+  console.log(`[API Request] Headers:`, headers);
 
-  NProgress.start();
+  if (!isBackgroundSync.current) {
+    NProgress.start();
+    toggleGlobalLoader(true);
+  }
 
   try {
-    response = await fetch(url, {
-      ...options,
-      headers,
-    });
-  } catch (error) {
-    NProgress.done();
-    throw new Error(
-      `Cannot reach HRMS API at ${url}. Check that the backend is running and the frontend API URL is correct.`
-    );
-  }
+    let response;
 
-  const contentType = response.headers.get("content-type") || "";
-
-  const data = contentType.includes("application/json")
-    ? await response.json()
-    : await response.text();
-
-  if (!response.ok) {
-    if (response.status === 401) {
-      sessionStorage.removeItem("hrms_token");
+    try {
+      response = await fetch(url, {
+        ...options,
+        headers,
+      });
+    } catch (error) {
+      console.error("[API Error] Network error:", error);
+      throw new Error(
+        `Cannot reach HRMS API at ${url}. Check that the backend is running and the frontend API URL is correct.`
+      );
     }
 
-    NProgress.done();
-    throw new Error(
-      typeof data === "object" && data?.message
-        ? data.message
-        : `API request failed with status ${response.status}`
-    );
-  }
+    const contentType = response.headers.get("content-type") || "";
+    let data;
 
-  // If a data-mutating call succeeded, broadcast an update event so all views sync
-  const method = (options.method || "GET").toUpperCase();
-  if (method !== "GET") {
-    broadcastDataChange(normalizedEndpoint, { method, timestamp: Date.now() });
-  }
+    try {
+      data = contentType.includes("application/json")
+        ? await response.json()
+        : await response.text();
+    } catch (parseError) {
+      console.error("[API Error] Failed to parse response:", parseError);
+      throw new Error("Invalid response from server. Failed to parse data.");
+    }
 
-  NProgress.done();
-  return data;
+    if (!response.ok) {
+      console.error("[API Error] Server returned error:", response.status, data);
+      
+      if (response.status === 401) {
+        console.warn("[API Error] 401 Unauthorized received for endpoint", endpoint);
+        // We will NOT aggressively remove the token here because if multiple concurrent
+        // requests are made, one 401 will wipe the token for the rest and mask the real error.
+        
+        // Only redirect if it's not a login attempt
+        if (!endpoint.includes("/auth/login") && window.location.pathname !== "/login") {
+          // window.location.href = "/login"; // Also disabling forced redirect to see the UI error
+        }
+      }
+
+      const errorMessage = typeof data === "object" && data?.message
+          ? data.message
+          : (typeof data === "string" ? data : `API request failed with status ${response.status}`);
+          
+      throw new Error(errorMessage);
+    }
+
+    // If a data-mutating call succeeded, broadcast an update event so all views sync
+    const method = (options.method || "GET").toUpperCase();
+    if (method !== "GET") {
+      broadcastDataChange(normalizedEndpoint, { method, timestamp: Date.now() });
+    }
+
+    return data;
+  } finally {
+    if (!isBackgroundSync.current) {
+      NProgress.done();
+      toggleGlobalLoader(false);
+    }
+  }
 }
 
 export async function apiDownload(endpoint, filename = "download") {
@@ -87,31 +139,54 @@ export async function apiDownload(endpoint, filename = "download") {
   };
 
   NProgress.start();
+  toggleGlobalLoader(true);
 
-  const response = await fetch(url, { headers });
+  try {
+    let response;
+    try {
+      response = await fetch(url, { headers });
+    } catch (error) {
+      throw new Error(`Cannot reach HRMS API at ${url}. Check that the backend is running and the frontend API URL is correct.`);
+    }
 
-  if (!response.ok) {
-    if (response.status === 401) {
-      sessionStorage.removeItem("hrms_token");
+    if (!response.ok) {
+      if (response.status === 401) {
+        sessionStorage.removeItem("hrms_token");
+        sessionStorage.removeItem("hrms_user");
+        if (window.location.pathname !== "/login") {
+          window.location.href = "/login";
+        }
+      }
+      const contentType = response.headers.get("content-type") || "";
+      if (contentType.includes("application/json")) {
+        let data;
+        try {
+          data = await response.json();
+        } catch (parseError) {
+          throw new Error(`Download failed with status ${response.status}`);
+        }
+        throw new Error(data?.message || `Download failed with status ${response.status}`);
+      }
+      throw new Error(`Download failed with status ${response.status}`);
     }
-    const contentType = response.headers.get("content-type") || "";
-    if (contentType.includes("application/json")) {
-      const data = await response.json();
-      NProgress.done();
-      throw new Error(data?.message || `Download failed with status ${response.status}`);
+
+    let blob;
+    try {
+      blob = await response.blob();
+    } catch (parseError) {
+      throw new Error("Failed to process download data.");
     }
+    
+    const blobUrl = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = blobUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(blobUrl);
+  } finally {
     NProgress.done();
-    throw new Error(`Download failed with status ${response.status}`);
+    toggleGlobalLoader(false);
   }
-
-  const blob = await response.blob();
-  const blobUrl = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = blobUrl;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(blobUrl);
-  NProgress.done();
 }

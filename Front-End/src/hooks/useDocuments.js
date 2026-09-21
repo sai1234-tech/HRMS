@@ -40,7 +40,7 @@ export function useDocuments() {
     load();
   }, [load]);
 
-  useSyncRefresh(load, { interval: 300, silent: true });
+  useSyncRefresh(load, { interval: 30000, silent: true });
 
   const upload = async (file, data) => {
     await uploadDocument(file, data);

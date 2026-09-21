@@ -46,15 +46,18 @@ export default function ChatbotWidget() {
 
   const { addTicket } = useEnterpriseOps();
 
-  const handleAction = (action) => {
+  const handleAction = async (action) => {
     if (action === "Cancel") {
       handleSend("Cancel");
     } else if (action === "Confirm" || action === "Proceed") {
       handleSend("Confirm");
-    } else if (action === "Create Ticket") {
-      const lastUserMsg = [...messages].reverse().find(m => m.sender === "user")?.text || "General Inquiry";
-      const ticketId = addTicket(user?.employeeId || "EMP-000", lastUserMsg);
-      setMessages(prev => [...prev, { sender: "bot", text: `HR Ticket created successfully. Reference ID: ${ticketId}. HR will review this shortly.` }]);
+    } else if (action === "Create Ticket" || action === "Raise HR Ticket") {
+      const lastUserMsg = [...messages].reverse().find(m => m.sender === "user")?.text || "General Support Inquiry";
+      const empCode = user?.employeeCode || user?.employeeId || "EM0175";
+      const empName = `${user?.firstName || ""} ${user?.lastName || ""}`.trim() || user?.name || user?.email || "Employee";
+      const empDisplay = `${empName} (${empCode})`;
+      const ticketId = await addTicket(empDisplay, lastUserMsg);
+      setMessages(prev => [...prev, { sender: "bot", text: `HR Support Ticket created successfully. Reference ID: ${ticketId}. HR Operations team has been notified and will review this shortly.` }]);
     }
   };
 

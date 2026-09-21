@@ -41,7 +41,7 @@ export function useEmployeePayroll(month, year) {
     load();
   }, [load]);
 
-  useSyncRefresh(load, { interval: 300, silent: true });
+  useSyncRefresh(load, { interval: 30000, silent: true });
 
   return { salary, payslip, loading, error, reload: load };
 }

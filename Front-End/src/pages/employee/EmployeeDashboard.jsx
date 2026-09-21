@@ -9,6 +9,7 @@ import { useAttendance } from "../../hooks/useAttendance";
 import { useLeaves } from "../../hooks/useLeaves";
 import { useTimesheets } from "../../hooks/useTimesheets";
 import { useEnterpriseOps } from "../../hooks/useEnterpriseOps";
+import { getMyDocuments, uploadDocument } from "../../services/documentService";
 import { formatTime, formatDate } from "../../utils/date";
 import "./EmployeeDashboard.css";
 
@@ -29,6 +30,68 @@ function EmployeeDashboard() {
   const leavesState = useLeaves();
   const timesheetState = useTimesheets();
   const { pulseAnswered, submitPulse } = useEnterpriseOps();
+
+  const [requestedDocs, setRequestedDocs] = useState([]);
+  const [uploadNotice, setUploadNotice] = useState("");
+  const [uploadBusy, setUploadBusy] = useState(false);
+
+  // Fetch HR document requests for logged in employee
+  useEffect(() => {
+    let mounted = true;
+    const fetchRequested = async () => {
+      try {
+        const res = await getMyDocuments();
+        const docs = res?.data || res?.documents || res || [];
+        if (mounted && Array.isArray(docs)) {
+          const reqs = docs.filter(
+            (d) => d.status === "requested" || d.status === "rejected"
+          );
+          setRequestedDocs(reqs);
+        }
+      } catch (e) {}
+    };
+
+    fetchRequested();
+    const handleSync = () => fetchRequested();
+    window.addEventListener("hrms:data_changed", handleSync);
+    window.addEventListener("storage", handleSync);
+    return () => {
+      mounted = false;
+      window.removeEventListener("hrms:data_changed", handleSync);
+      window.removeEventListener("storage", handleSync);
+    };
+  }, []);
+
+  const handleDashboardUpload = async (e, reqDoc) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setUploadBusy(true);
+      setUploadNotice("");
+
+      await uploadDocument(file, {
+        documentType: reqDoc.documentType || "General Document",
+        documentId: reqDoc._id || reqDoc.id,
+        requestId: reqDoc._id || reqDoc.id,
+        documentName: reqDoc.documentName || reqDoc.documentType || file.name,
+      });
+
+      setUploadNotice(`✓ Successfully uploaded "${file.name}"! Document submitted to HR for review.`);
+      window.dispatchEvent(new CustomEvent("hrms:data_changed"));
+
+      const res = await getMyDocuments();
+      const docs = res?.data || res?.documents || res || [];
+      if (Array.isArray(docs)) {
+        setRequestedDocs(docs.filter((d) => d.status === "requested" || d.status === "rejected"));
+      }
+    } catch (err) {
+      alert(err.message || "Failed to upload document.");
+    } finally {
+      setUploadBusy(false);
+      e.target.value = "";
+    }
+  };
 
   // Greeting based on current time
   const currentHour = new Date().getHours();
@@ -112,112 +175,32 @@ function EmployeeDashboard() {
   );
 
   // Attendance metrics calculation
+  // Attendance metrics calculation
   const attendanceList = attendanceState.attendance || [];
   const presentCount = attendanceList.filter(
     (record) =>
       ["present", "late", "completed", "half-day", "halfday"].includes(
         String(record.status || "").toLowerCase()
       ) || Boolean(record.checkIn)
-  ).length || 20;
+  ).length;
 
   const lateCount = attendanceList.filter(
     (record) => String(record.status || "").toLowerCase() === "late"
-  ).length || 1;
+  ).length;
 
   const attendanceRate = attendanceList.length
     ? Math.min(100, Math.round((presentCount / attendanceList.length) * 100))
-    : 96.4;
+    : 0;
 
-  const leaveBalanceDays = profile.leaveBalance ?? 18;
+  const leaveBalanceDays = leavesState.balance?.length
+    ? leavesState.balance.reduce((total, b) => total + Number(b.available || 0), 0)
+    : 0;
 
-  // Realistic 7-day week attendance activity showing Saturday & Sunday as off
-  const displayPunches = attendanceList.length >= 7
-    ? attendanceList.slice(0, 7)
-    : [
-      {
-        id: "punch-1",
-        date: new Date().toISOString().slice(0, 10),
-        dayName: "Friday (Today)",
-        checkIn: today?.checkIn || "2026-09-18T09:12:00.000Z",
-        checkOut: today?.checkOut || null,
-        workingHours: checkedIn ? "In Progress" : "8.2",
-        status: "Present",
-      },
-      {
-        id: "punch-2",
-        date: "2026-09-17",
-        dayName: "Thursday",
-        checkIn: "2026-09-17T09:20:00.000Z",
-        checkOut: "2026-09-17T18:30:00.000Z",
-        workingHours: "8.5",
-        status: "Present",
-      },
-      {
-        id: "punch-3",
-        date: "2026-09-16",
-        dayName: "Wednesday",
-        checkIn: "2026-09-16T09:45:00.000Z",
-        checkOut: "2026-09-16T18:45:00.000Z",
-        workingHours: "8.0",
-        status: "Late",
-      },
-      {
-        id: "punch-4",
-        date: "2026-09-15",
-        dayName: "Tuesday",
-        checkIn: "2026-09-15T09:10:00.000Z",
-        checkOut: "2026-09-15T18:15:00.000Z",
-        workingHours: "8.2",
-        status: "Present",
-      },
-      {
-        id: "punch-5",
-        date: "2026-09-14",
-        dayName: "Monday",
-        checkIn: "2026-09-14T09:15:00.000Z",
-        checkOut: "2026-09-14T18:10:00.000Z",
-        workingHours: "8.1",
-        status: "Present",
-      },
-      {
-        id: "punch-6",
-        date: "2026-09-13",
-        dayName: "Sunday",
-        checkIn: null,
-        checkOut: null,
-        workingHours: "0.0",
-        status: "Weekend Off",
-      },
-      {
-        id: "punch-7",
-        date: "2026-09-12",
-        dayName: "Saturday",
-        checkIn: null,
-        checkOut: null,
-        workingHours: "0.0",
-        status: "Weekend Off",
-      },
-    ];
+  // Strict user attendance activity for current week
+  const displayPunches = attendanceList.slice(0, 7);
 
-  // Realistic leave applications
-  const displayLeaves = leavesState.leaves?.length
-    ? leavesState.leaves.slice(0, 4)
-    : [
-      {
-        id: "leave-1",
-        type: "Annual Paid Leave",
-        startDate: "2026-08-14",
-        endDate: "2026-08-16",
-        status: "Approved",
-      },
-      {
-        id: "leave-2",
-        type: "Casual Leave",
-        startDate: "2026-07-22",
-        endDate: "2026-07-22",
-        status: "Approved",
-      },
-    ];
+  // User's own leave applications
+  const displayLeaves = leavesState.leaves?.slice(0, 4) || [];
 
   // Upcoming company holidays
   const currentYear = new Date().getFullYear();
@@ -323,6 +306,70 @@ function EmployeeDashboard() {
             </Link>
           </div>
         )}
+
+        {/* =====================================================
+            HR DOCUMENT REQUEST ALERT BANNERS
+        ===================================================== */}
+        {requestedDocs.map((reqDoc) => (
+          <div
+            key={reqDoc._id || reqDoc.id}
+            style={{
+              background: "#fff7ed",
+              border: "1px solid #ffedd5",
+              padding: "1rem 1.25rem",
+              borderRadius: "10px",
+              marginBottom: "1.25rem",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              boxShadow: "0 4px 6px -1px rgba(234, 88, 12, 0.1)",
+              flexWrap: "wrap",
+              gap: "1rem",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "0.85rem" }}>
+              <div
+                style={{
+                  fontSize: "1.6rem",
+                  background: "#ffedd5",
+                  padding: "0.5rem 0.75rem",
+                  borderRadius: "8px",
+                }}
+              >
+                📨
+              </div>
+              <div>
+                <strong style={{ display: "block", color: "#c2410c", fontSize: "0.98rem" }}>
+                  Action Required: HR Document Request ({reqDoc.documentType || reqDoc.documentName})
+                </strong>
+                <span style={{ color: "#ea580c", fontSize: "0.86rem" }}>
+                  HR Note: "{reqDoc.requestNote || reqDoc.verificationNotes || "Please submit requested file."}"
+                </span>
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+              <label
+                className="att-btn primary"
+                style={{ backgroundColor: "#ea580c", border: "none", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "0.4rem" }}
+              >
+                {uploadBusy ? "Uploading..." : "📤 Select & Upload File"}
+                <input
+                  type="file"
+                  onChange={(e) => handleDashboardUpload(e, reqDoc)}
+                  disabled={uploadBusy}
+                  hidden
+                />
+              </label>
+              <Link
+                to="/employee/documents"
+                className="att-btn secondary"
+                style={{ color: "#ea580c", borderColor: "#ffedd5" }}
+              >
+                📁 View Vault
+              </Link>
+            </div>
+          </div>
+        ))}
 
         {/* =====================================================
             HERO COMMAND BANNER
@@ -590,7 +637,9 @@ function EmployeeDashboard() {
             </div>
             <div className="shift-detail-item">
               <span>Break Duration</span>
-              <strong>45 mins (Lunch break deducted)</strong>
+              <strong>
+                {today?.checkIn ? `${today.breakDuration || 45} mins (Lunch break deducted)` : "0 mins / N/A"}
+              </strong>
             </div>
             <div className="shift-detail-item">
               <span>IP Verification</span>
@@ -756,45 +805,31 @@ function EmployeeDashboard() {
               </div>
 
               <div>
-                <div className="leave-type-row">
-                  <div className="leave-type-head">
-                    <span>Earned / Annual Leave</span>
-                    <strong>12 / 15 Days</strong>
-                  </div>
-                  <div className="leave-mini-rail">
-                    <div className="leave-mini-fill earned" style={{ width: "80%" }} />
-                  </div>
-                </div>
-
-                <div className="leave-type-row">
-                  <div className="leave-type-head">
-                    <span>Casual Leave</span>
-                    <strong>4 / 6 Days</strong>
-                  </div>
-                  <div className="leave-mini-rail">
-                    <div className="leave-mini-fill casual" style={{ width: "66%" }} />
-                  </div>
-                </div>
-
-                <div className="leave-type-row">
-                  <div className="leave-type-head">
-                    <span>Sick / Medical Leave</span>
-                    <strong>6 / 8 Days</strong>
-                  </div>
-                  <div className="leave-mini-rail">
-                    <div className="leave-mini-fill sick" style={{ width: "75%" }} />
-                  </div>
-                </div>
-
-                <div className="leave-type-row">
-                  <div className="leave-type-head">
-                    <span>Compensatory Off</span>
-                    <strong>1 / 2 Days</strong>
-                  </div>
-                  <div className="leave-mini-rail">
-                    <div className="leave-mini-fill comp" style={{ width: "50%" }} />
-                  </div>
-                </div>
+                {leavesState.balance?.length > 0 ? (
+                  leavesState.balance.map((b) => {
+                    const available = b.available ?? 0;
+                    const total = b.annualAllocation ?? 0;
+                    const pct = total ? Math.min(100, Math.round((available / total) * 100)) : 0;
+                    return (
+                      <div key={b.leaveType?._id || b.leaveType?.name} className="leave-type-row">
+                        <div className="leave-type-head">
+                          <span>{b.leaveType?.name || "Leave"}</span>
+                          <strong>{available} / {total} Days</strong>
+                        </div>
+                        <div className="leave-mini-rail">
+                          <div
+                            className="leave-mini-fill earned"
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <p style={{ fontSize: "0.84rem", color: "#64748b", margin: "0.5rem 0" }}>
+                    No leave balances allocated.
+                  </p>
+                )}
               </div>
             </div>
 
@@ -808,31 +843,37 @@ function EmployeeDashboard() {
               </div>
 
               <div>
-                {displayLeaves.map((leave, idx) => (
-                  <div
-                    key={leave.id || idx}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      padding: "0.65rem 0",
-                      borderBottom: "1px solid #f1f5f9",
-                      fontSize: "0.84rem",
-                    }}
-                  >
-                    <div>
-                      <strong style={{ display: "block", color: "#0f172a" }}>
-                        {leave.type || "Leave Request"}
-                      </strong>
-                      <span style={{ fontSize: "0.74rem", color: "#64748b" }}>
-                        {formatDate(leave.startDate)}
+                {displayLeaves.length > 0 ? (
+                  displayLeaves.map((leave, idx) => (
+                    <div
+                      key={leave.id || leave._id || idx}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        padding: "0.65rem 0",
+                        borderBottom: "1px solid #f1f5f9",
+                        fontSize: "0.84rem",
+                      }}
+                    >
+                      <div>
+                        <strong style={{ display: "block", color: "#0f172a" }}>
+                          {leave.leaveType?.name || leave.type || "Leave Request"}
+                        </strong>
+                        <span style={{ fontSize: "0.74rem", color: "#64748b" }}>
+                          {formatDate(leave.startDate)}
+                        </span>
+                      </div>
+                      <span className="status-chip-badge present">
+                        {leave.status || "Pending"}
                       </span>
                     </div>
-                    <span className="status-chip-badge present">
-                      {leave.status || "Approved"}
-                    </span>
-                  </div>
-                ))}
+                  ))
+                ) : (
+                  <p style={{ fontSize: "0.84rem", color: "#64748b", margin: "0.5rem 0" }}>
+                    No recent leave requests found.
+                  </p>
+                )}
               </div>
             </div>
 

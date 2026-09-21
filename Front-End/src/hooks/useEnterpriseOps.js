@@ -12,17 +12,7 @@ const INITIAL_OKRS = [
   { id: 2, objective: "Ship Recruitment Module", result: "Completed", score: 5 },
 ];
 
-const DEFAULT_TICKETS = [
-  { id: "TICK-89036", empId: "EMP-102", query: "My computer monitor is broken and I cannot code.", status: "Open", resolution: "" },
-  { id: "TICK-44211", empId: "EMP-104", query: "Can you clarify the remote work policy for this Friday?", status: "Resolved", resolution: "Yes, you can work remotely this Friday." }
-];
-
-const getStoredTickets = () => {
-  const stored = localStorage.getItem("hrms_simulated_tickets");
-  return stored ? JSON.parse(stored) : DEFAULT_TICKETS;
-};
-
-let INITIAL_TICKETS = getStoredTickets();
+import { createTicket, getAllTickets, resolveTicket as resolveTicketApi } from "../services/ticketService";
 
 export const useEnterpriseOps = () => {
   const [pulseAnswered, setPulseAnswered] = useState(false);
@@ -30,31 +20,30 @@ export const useEnterpriseOps = () => {
   
   const [resourcePool, setResourcePool] = useState(INITIAL_EMPLOYEES);
   const [okrs, setOkrs] = useState(INITIAL_OKRS);
-  const [tickets, setTickets] = useState(INITIAL_TICKETS);
+  const [tickets, setTickets] = useState([]);
+
+  const fetchTickets = useCallback(async () => {
+    try {
+      const response = await getAllTickets();
+      if (response.success) {
+        setTickets(response.tickets);
+      }
+    } catch (error) {
+      console.error("Failed to fetch tickets", error);
+    }
+  }, []);
 
   useEffect(() => {
-    const handleStorage = () => {
-      const stored = localStorage.getItem("hrms_simulated_tickets");
-      if (stored) {
-        INITIAL_TICKETS = JSON.parse(stored);
-        setTickets(INITIAL_TICKETS);
-      }
-    };
+    fetchTickets();
     
-    // Listen for changes from other tabs
-    window.addEventListener("storage", handleStorage);
-    
-    // Also listen for a custom event from the same tab
-    window.addEventListener("hrms_tickets_updated", handleStorage);
-    
-    // Sync on mount
-    handleStorage();
+    // Listen for custom events to sync across components in the same tab
+    const handleTicketUpdate = () => fetchTickets();
+    window.addEventListener("hrms_tickets_updated", handleTicketUpdate);
     
     return () => {
-      window.removeEventListener("storage", handleStorage);
-      window.removeEventListener("hrms_tickets_updated", handleStorage);
+      window.removeEventListener("hrms_tickets_updated", handleTicketUpdate);
     };
-  }, []);
+  }, [fetchTickets]);
 
   // --- 1. Pulse Tracker ---
   const submitPulse = useCallback((score) => {
@@ -109,23 +98,27 @@ export const useEnterpriseOps = () => {
     rateOkr,
     
     tickets,
-    addTicket: useCallback((empId, query) => {
-      const newTicket = { id: `TICK-${Math.floor(Math.random() * 90000) + 10000}`, empId, query, status: "Open", resolution: "" };
-      INITIAL_TICKETS.unshift(newTicket);
-      localStorage.setItem("hrms_simulated_tickets", JSON.stringify(INITIAL_TICKETS));
-      window.dispatchEvent(new Event("hrms_tickets_updated"));
-      setTickets([...INITIAL_TICKETS]);
-      return newTicket.id;
-    }, []),
-    resolveTicket: useCallback((ticketId, resolution) => {
-      const idx = INITIAL_TICKETS.findIndex(t => t.id === ticketId);
-      if (idx > -1) {
-        INITIAL_TICKETS[idx].status = "Resolved";
-        INITIAL_TICKETS[idx].resolution = resolution;
+    addTicket: async (empId, query) => {
+      try {
+        const response = await createTicket(empId || "Employee", query);
+        if (response.success) {
+          window.dispatchEvent(new Event("hrms_tickets_updated"));
+          return response.ticket.id;
+        }
+      } catch (error) {
+        console.error("Failed to create ticket", error);
       }
-      localStorage.setItem("hrms_simulated_tickets", JSON.stringify(INITIAL_TICKETS));
-      window.dispatchEvent(new Event("hrms_tickets_updated"));
-      setTickets([...INITIAL_TICKETS]);
-    }, [])
+      return null;
+    },
+    resolveTicket: async (ticketId, resolution) => {
+      try {
+        const response = await resolveTicketApi(ticketId, resolution);
+        if (response.success) {
+          window.dispatchEvent(new Event("hrms_tickets_updated"));
+        }
+      } catch (error) {
+        console.error("Failed to resolve ticket", error);
+      }
+    }
   };
 };

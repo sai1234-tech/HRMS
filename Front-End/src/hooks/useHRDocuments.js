@@ -46,7 +46,7 @@ export function useHRDocuments(employeeId) {
     load();
   }, [load]);
 
-  useSyncRefresh(load, { interval: 300, silent: true, enabled: Boolean(employeeId) });
+  useSyncRefresh(load, { interval: 30000, silent: true, enabled: Boolean(employeeId) });
 
   const request = async (data) => {
     await requestDocument(data);

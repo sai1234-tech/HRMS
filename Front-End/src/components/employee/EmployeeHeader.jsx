@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useSidebar } from "../../context/SidebarContext";
 import { getEmployee } from "../../services/employeeService";
+import { getMyDocuments } from "../../services/documentService";
 import { normalizeRole } from "../../utils/auth";
 import HeaderEmployeeSearch from "./HeaderEmployeeSearch";
 import "./EmployeeHeader.css";
@@ -49,6 +50,7 @@ function EmployeeHeader() {
 
   const [showNotifications, setShowNotifications] = useState(false);
   const [currentTime, setCurrentTime] = useState("");
+  const [requestedDocs, setRequestedDocs] = useState([]);
   const dropdownRef = useRef(null);
 
   const [headerPhoto, setHeaderPhoto] = useState(() => {
@@ -91,6 +93,33 @@ function EmployeeHeader() {
       }
     }
   }, [employee, user]);
+
+  // Fetch real-time HR document requests for logged-in user
+  useEffect(() => {
+    let mounted = true;
+    const fetchRequestedDocs = async () => {
+      try {
+        const res = await getMyDocuments();
+        const docs = res?.data || res?.documents || res || [];
+        if (mounted && Array.isArray(docs)) {
+          const reqs = docs.filter(
+            (d) => d.status === "requested" || d.status === "rejected"
+          );
+          setRequestedDocs(reqs);
+        }
+      } catch (e) {}
+    };
+
+    fetchRequestedDocs();
+    const handleSync = () => fetchRequestedDocs();
+    window.addEventListener("hrms:data_changed", handleSync);
+    window.addEventListener("storage", handleSync);
+    return () => {
+      mounted = false;
+      window.removeEventListener("hrms:data_changed", handleSync);
+      window.removeEventListener("storage", handleSync);
+    };
+  }, []);
 
   // Listen for real-time photo updates dispatched from Profile page
   useEffect(() => {
@@ -171,24 +200,29 @@ function EmployeeHeader() {
     return ROUTE_CONTEXT_MAP[location.pathname] || { section: "Portal", title: "Quadratic HRMS" };
   }, [location.pathname]);
 
+  const docNotifications = requestedDocs.map((doc) => ({
+    id: `doc-req-${doc._id || doc.id}`,
+    title: doc.status === "requested" ? "📨 HR Document Requested" : "✕ Document Rejected",
+    desc: `${doc.documentType || doc.documentName || "Document"}: ${doc.requestNote || doc.verificationNotes || "Upload requested by HR."}`,
+    time: "Action Needed",
+    link: "/employee/documents",
+  }));
+
   const notifications = [
+    ...docNotifications,
     {
       id: 1,
       title: "Payroll Statement Verified",
       desc: "September salary calculation finalized and available for download.",
       time: "10m ago",
+      link: "/employee/payroll",
     },
     {
       id: 2,
       title: "Leave Request Approved",
       desc: "Upcoming leave has been recorded in the attendance calendar.",
       time: "2h ago",
-    },
-    {
-      id: 3,
-      title: "Tax Window Active",
-      desc: "New Tax Regime declaration window remains open until month end.",
-      time: "1d ago",
+      link: "/employee/leaves",
     },
   ];
 

@@ -14,6 +14,10 @@ import EmployeePayroll from "../pages/employee/EmployeePayroll";
 import EmployeeDocuments from "../pages/employee/EmployeeDocuments";
 import Performance from "../pages/employee/Performance";
 
+// Manager pages
+import ManagerDashboard from "../pages/manager/ManagerDashboard.jsx";
+import ManagerProjects from "../pages/manager/ManagerProjects.jsx";
+
 // HR pages
 import HRDashboard from "../pages/hr/HRDashboard";
 import DepartmentManagement from "../pages/hr/DepartmentManagement";
@@ -25,6 +29,7 @@ import RecruitmentOnboarding from "../pages/hr/RecruitmentOnboarding";
 import ResourceAllocation from "../pages/hr/ResourceAllocation";
 import ShiftRoster from "../pages/hr/ShiftRoster";
 import Helpdesk from "../pages/hr/Helpdesk";
+import HRPerformance from "../pages/hr/HRPerformance";
 import AccountManagement from "../pages/admin/AccountManagement";
 import AdminDashboard from "../pages/admin/AdminDashboard";
 import OrganizationHierarchy from "../pages/organization/OrganizationHierarchy";
@@ -199,6 +204,29 @@ function AppRoutes() {
 
 
       {/* =========================
+          MANAGER ROUTES
+      ========================== */}
+
+      <Route
+        path="/manager/dashboard"
+        element={
+          <ProtectedRoute roles={["manager", "admin"]}>
+            <ManagerDashboard />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/manager/projects"
+        element={
+          <ProtectedRoute roles={["manager", "admin"]}>
+            <ManagerProjects />
+          </ProtectedRoute>
+        }
+      />
+
+
+      {/* =========================
           ADMIN ROUTES
       ========================== */}
 
@@ -230,6 +258,15 @@ function AppRoutes() {
         element={
           <ProtectedRoute roles={["hr", "admin"]}>
             <HRDashboard />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/hr/performance"
+        element={
+          <ProtectedRoute roles={["hr", "admin", "manager"]}>
+            <HRPerformance />
           </ProtectedRoute>
         }
       />

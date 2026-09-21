@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import EmployeeHeader from "../../components/employee/EmployeeHeader";
 import Loader from "../../components/common/Loader";
@@ -11,7 +11,7 @@ function calculateDays(start, end) {
   if (!start || !end) return 0;
   const s = new Date(start);
   const e = new Date(end);
-  if (e < s) return 0;
+  if (isNaN(s.getTime()) || isNaN(e.getTime()) || e < s) return 0;
   const diffTime = Math.abs(e - s);
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
 }
@@ -44,7 +44,9 @@ const WFH_SESSION_TYPES = [
 
 function EmployeeLeaves() {
   const {
+    leaves,
     leaveTypes,
+    balance,
     loading,
     error,
     submitLeave,
@@ -92,8 +94,18 @@ function EmployeeLeaves() {
   const [modalSubmitting, setModalSubmitting] = useState(false);
   const [modalError, setModalError] = useState("");
 
-  // Leave types list
+  // Leave types list (dynamically mapped from backend isolated user balance)
   const typesToRender = useMemo(() => {
+    if (balance && balance.length > 0) {
+      return balance.map((b) => ({
+        id: b.leaveType?._id || b.leaveType?.code,
+        code: b.leaveType?.code || "LV",
+        name: b.leaveType?.name || "Leave",
+        available: b.available ?? 0,
+        total: b.annualAllocation ?? 0,
+        accrual: `${b.used || 0} used, ${b.pending || 0} pending`,
+      }));
+    }
     if (leaveTypes && leaveTypes.length > 0) {
       return leaveTypes
         .filter((t) => t.id !== "wfh" && t.code !== "WFH")
@@ -103,85 +115,37 @@ function EmployeeLeaves() {
             id: t._id || t.id,
             code: t.code || match?.code || "LV",
             name: t.name || match?.name || "Leave",
-            available: t.available ?? match?.available ?? 12,
-            total: t.total ?? match?.total ?? 15,
+            available: t.available ?? t.annualAllocation ?? 0,
+            total: t.annualAllocation ?? t.total ?? 0,
             accrual: match?.accrual || "Standard policy",
           };
         });
     }
     return REAL_LEAVE_TYPES;
-  }, [leaveTypes]);
+  }, [balance, leaveTypes]);
 
-  // Local requests list (supports instant responsive updates, edits, deletes)
-  const [localLeaves, setLocalLeaves] = useState([
-    {
-      id: "wfh-pending-1",
-      isWfh: true,
-      type: "Work From Home (WFH)",
-      sessionType: "full",
-      sessionLabel: "Full Day (8.0 hrs)",
-      startDate: "2026-09-22",
-      endDate: "2026-09-22",
-      duration: 1,
-      reason: "Deep Focus Sprint / Complex Feature Coding",
-      deliverables: "Complete frontend integration and test PR for enterprise leaves hub",
-      emergencyContact: "+91 98490 11223",
-      status: "Pending",
-      appliedAt: "2026-09-18",
-    },
-    {
-      id: "leave-pending-1",
-      isWfh: false,
-      type: "Casual Leave",
-      leaveTypeId: "casual",
-      startDate: "2026-09-24",
-      endDate: "2026-09-24",
-      duration: 1,
-      reason: "Dentist appointment and routine consultation",
-      emergencyContact: "+91 98490 11223",
-      status: "Pending",
-      appliedAt: "2026-09-17",
-    },
-    {
-      id: "leave-1",
-      isWfh: false,
-      type: "Earned / Privilege Leave",
-      leaveTypeId: "earned",
-      startDate: "2026-08-14",
-      endDate: "2026-08-16",
-      duration: 3,
-      reason: "Family vacation to hometown",
-      emergencyContact: "+91 98490 11223",
-      status: "Approved",
-      appliedAt: "2026-08-01",
-    },
-    {
-      id: "leave-2",
-      isWfh: false,
-      type: "Casual Leave",
-      leaveTypeId: "casual",
-      startDate: "2026-07-22",
-      endDate: "2026-07-22",
-      duration: 1,
-      reason: "Personal government errand",
-      emergencyContact: "+91 98490 11223",
-      status: "Approved",
-      appliedAt: "2026-07-18",
-    },
-    {
-      id: "leave-3",
-      isWfh: false,
-      type: "Sick / Medical Leave",
-      leaveTypeId: "sick",
-      startDate: "2026-06-08",
-      endDate: "2026-06-09",
-      duration: 2,
-      reason: "Viral fever and physician advised bed rest",
-      emergencyContact: "+91 98490 11223",
-      status: "Approved",
-      appliedAt: "2026-06-08",
-    },
-  ]);
+  // Local requests list (strictly scoped to user's logged-in records)
+  const [localLeaves, setLocalLeaves] = useState([]);
+
+  // Sync user leaves from backend API into local state
+  useEffect(() => {
+    if (Array.isArray(leaves)) {
+      const formatted = leaves.map((l) => ({
+        id: l._id || l.id,
+        isWfh: l.leaveType?.code === "WFH" || l.leaveType?.name?.includes("Work From Home"),
+        type: l.leaveType?.name || l.type || "Leave",
+        leaveTypeId: l.leaveType?._id || l.leaveType,
+        startDate: l.startDate ? String(l.startDate).slice(0, 10) : "",
+        endDate: l.endDate ? String(l.endDate).slice(0, 10) : "",
+        duration: l.numberOfDays || calculateDays(l.startDate, l.endDate),
+        reason: l.reason || "",
+        emergencyContact: l.emergencyContact || "",
+        status: l.status || "Pending",
+        appliedAt: l.createdAt ? String(l.createdAt).slice(0, 10) : "",
+      }));
+      setLocalLeaves(formatted);
+    }
+  }, [leaves]);
 
   // --------------------------------------------------------------------------
   // Leave Mode Calculations
@@ -469,7 +433,7 @@ function EmployeeLeaves() {
   // KPI calculations
   const approvedCount = localLeaves.filter((l) => l.status?.toLowerCase() === "approved").length;
   const pendingCount = localLeaves.filter((l) => l.status?.toLowerCase() === "pending").length;
-  const remainingBalance = 18;
+  const remainingBalance = typesToRender.reduce((sum, t) => sum + (Number(t.available) || 0), 0);
 
   return (
     <>
@@ -993,10 +957,10 @@ function EmployeeLeaves() {
         {/* =====================================================
             LEAVE & WFH APPLICATION HISTORY TABLE
         ===================================================== */}
-        {loading || (error && error.toLowerCase().includes("authorization")) ? (
+        {loading || (error && String(typeof error === "string" ? error : error?.message || "").toLowerCase().includes("authorization")) ? (
           <Loader label="Loading leave history..." />
         ) : error ? (
-          <ErrorMessage message={error} />
+          <ErrorMessage message={typeof error === "string" ? error : error?.message || "Failed to load leave history"} />
         ) : (
           <section className="leave-history-panel" aria-label="Leave History Table">
             <div className="leave-history-head">

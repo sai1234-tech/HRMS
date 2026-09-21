@@ -9,6 +9,7 @@ const {
   createManagedAccount,
   setupFirstAdmin,
   getAdminSummary,
+  updateMySkills,
 } = require("../controllers/auth.controller");
 
 const authMiddleware =
@@ -59,6 +60,12 @@ router.get(
   "/me",
   authMiddleware,
   getMe
+);
+
+router.put(
+  "/me/skills",
+  authMiddleware,
+  updateMySkills
 );
 
 // ==========================================

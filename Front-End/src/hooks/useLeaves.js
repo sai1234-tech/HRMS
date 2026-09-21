@@ -43,7 +43,7 @@ export function useLeaves() {
     loadLeaves();
   }, [loadLeaves]);
 
-  useSyncRefresh(loadLeaves, { interval: 300, silent: true });
+  useSyncRefresh(loadLeaves, { interval: 30000, silent: true });
 
   const submitLeave = async (data) => {
     await applyForLeave(data);

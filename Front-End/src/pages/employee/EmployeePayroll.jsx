@@ -127,48 +127,57 @@ function EmployeePayrollContent({ user, employee }) {
       ? salary.salary
       : salary?.compensation || salarySource;
 
-  const numericSalary =
-    typeof salary === "number"
-      ? salary
-      : typeof salary?.salary === "number"
-      ? salary.salary
-      : typeof salaryRecord === "number"
-      ? salaryRecord
-      : 0;
-
-  const annualSalaryFromRecord = Number(
+  const rawAnnualSalary = Number(
     valueOf(salaryRecord, [
       "annualSalary",
       "annual",
       "yearlySalary",
       "grossAnnualSalary",
-    ]) ||
-      numericSalary ||
-      0
-  );
-
-  const baseSalaryFromRecord = Number(
-    valueOf(salaryRecord, [
-      "baseSalary",
-      "basicSalary",
-      "salary",
-      "monthlySalary",
-      "monthly",
     ]) || 0
   );
 
-  const monthlySalaryFromRecord = Number(
+  const rawMonthlySalary = Number(
     valueOf(salaryRecord, [
       "monthlySalary",
       "monthly",
       "monthlyBaseSalary",
-    ]) ??
-      (annualSalaryFromRecord ? annualSalaryFromRecord / 12 : baseSalaryFromRecord)
+      "grossSalary",
+      "grossPay",
+    ]) || 0
   );
 
-  // Standard corporate baseline if not configured
-  const finalAnnual = annualSalaryFromRecord || (monthlySalaryFromRecord ? monthlySalaryFromRecord * 12 : 1140000);
-  const finalMonthly = monthlySalaryFromRecord || Math.round(finalAnnual / 12) || 95000;
+  const rawBasic = Number(
+    valueOf(salaryRecord, [
+      "basicSalary",
+      "basic",
+      "baseSalary",
+      "salary",
+    ]) || 0
+  );
+
+  // Intelligent Annual vs Monthly conversion
+  let finalAnnual = 0;
+  let finalMonthly = 0;
+
+  if (rawAnnualSalary >= 120000) {
+    finalAnnual = rawAnnualSalary;
+    finalMonthly = Math.round(rawAnnualSalary / 12);
+  } else if (rawMonthlySalary >= 120000) {
+    finalAnnual = rawMonthlySalary;
+    finalMonthly = Math.round(rawMonthlySalary / 12);
+  } else if (rawBasic >= 120000) {
+    finalAnnual = rawBasic;
+    finalMonthly = Math.round(rawBasic / 12);
+  } else if (rawMonthlySalary > 0) {
+    finalMonthly = rawMonthlySalary;
+    finalAnnual = rawMonthlySalary * 12;
+  } else if (rawBasic > 0) {
+    finalMonthly = rawBasic;
+    finalAnnual = rawBasic * 12;
+  } else {
+    finalAnnual = 900000;
+    finalMonthly = 75000;
+  }
 
   // =========================================================
   // EMPLOYEE PROFILE INFORMATION
@@ -231,32 +240,45 @@ function EmployeePayrollContent({ user, employee }) {
   const earnings = payslip?.earnings || payslip?.income || {};
   const deductions = payslip?.deductions || {};
 
-  const displayGrossPay = Number(
+  const rawGrossPay = Number(
     valueOf(payslip, ["grossSalary", "grossPay"]) ||
       earnings.total ||
       finalMonthly
   );
+  const displayGrossPay =
+    rawGrossPay >= 120000 ? Math.round(rawGrossPay / 12) : rawGrossPay;
 
-  const displayBasicSalary = Number(
+  const rawBasicSalary = Number(
     valueOf(payslip, ["basicSalary", "basic", "baseSalary"]) ||
       valueOf(earnings, ["basicSalary", "basic", "baseSalary"]) ||
       Math.round(displayGrossPay * 0.5)
   );
+  const displayBasicSalary =
+    rawBasicSalary >= 120000
+      ? Math.round(rawBasicSalary / 12)
+      : rawBasicSalary > displayGrossPay
+      ? Math.round(displayGrossPay * 0.5)
+      : rawBasicSalary;
 
-  const displayHra = Number(
+  const rawHra = Number(
     valueOf(payslip, ["allowances", "allowance", "totalAllowances", "hra"]) ||
       valueOf(earnings, ["allowances", "allowance", "hra"]) ||
       Math.round(displayGrossPay * 0.25)
   );
+  const displayHra =
+    rawHra >= 120000
+      ? Math.round(rawHra / 12)
+      : rawHra >= displayGrossPay
+      ? Math.round(displayGrossPay * 0.25)
+      : rawHra;
 
   const displaySpecial = Number(
     valueOf(earnings, ["specialAllowance", "special"]) ||
-      Math.round(displayGrossPay * 0.15)
+      Math.round(displayGrossPay * 0.25)
   );
 
   const displayConveyance = Number(
-    valueOf(earnings, ["conveyance", "transport"]) ||
-      Math.max(0, displayGrossPay - displayBasicSalary - displayHra - displaySpecial)
+    valueOf(earnings, ["conveyance", "transport"]) || 0
   );
 
   const displayBonus = Number(
@@ -266,25 +288,29 @@ function EmployeePayrollContent({ user, employee }) {
   );
 
   // Deductions calculation
-  const displayPf = Number(
+  const rawPf = Number(
     valueOf(payslip, ["pf", "providentFund", "pfDeduction"]) ||
       valueOf(deductions, ["pf", "providentFund", "pfDeduction"]) ||
       Math.min(Math.round(displayBasicSalary * 0.12), 3600)
   );
+  const displayPf = rawPf >= 120000 ? Math.round(rawPf / 12) : rawPf;
 
-  const displayPt = Number(
+  const rawPt = Number(
     valueOf(payslip, ["tax", "incomeTax", "taxDeduction", "pt"]) ||
       valueOf(deductions, ["tax", "pt", "professionalTax"]) ||
       200
   );
+  const displayPt = rawPt >= 120000 ? Math.round(rawPt / 12) : rawPt;
 
-  const displayTds = Number(
+  const rawTds = Number(
     valueOf(deductions, ["tds", "incomeTax", "taxWithholding"]) ||
+      valueOf(payslip, ["deduction"]) ||
       Math.max(0, Math.round(displayGrossPay * 0.08))
   );
+  const displayTds = rawTds >= 120000 ? Math.round(rawTds / 12) : rawTds;
 
   const displayOtherDeductions = Number(
-    valueOf(payslip, ["otherDeductions", "deduction"]) ||
+    valueOf(payslip, ["otherDeductions"]) ||
       valueOf(deductions, ["otherDeductions", "other"]) ||
       0
   );
@@ -298,10 +324,14 @@ function EmployeePayrollContent({ user, employee }) {
       calculatedTotalDeductions
   );
 
-  const displayNetPay = Number(
+  const rawNetPay = Number(
     valueOf(payslip, ["netSalary", "netPay", "netAmount"]) ||
       Math.max(displayGrossPay - displayTotalDeductions, 0)
   );
+  const displayNetPay =
+    rawNetPay >= 120000
+      ? Math.round(rawNetPay / 12)
+      : Math.max(displayGrossPay - displayTotalDeductions, 0);
 
   const displayStatus = hasRealPayslip
     ? payslip.status || "Verified & Disbursed"
@@ -324,21 +354,50 @@ function EmployeePayrollContent({ user, employee }) {
     Math.round((displayTotalDeductions / (displayGrossPay || 1)) * 100)
   );
 
+  const joiningDateRaw =
+    profile.employment?.joiningDate ||
+    profile.joiningDate ||
+    profile.dateOfJoining;
+
+  const joiningYearMonth = useMemo(() => {
+    if (!joiningDateRaw) return "";
+    const d = new Date(joiningDateRaw);
+    if (isNaN(d.getTime())) return "";
+    return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+  }, [joiningDateRaw]);
+
+  const isPeriodBeforeJoining = Boolean(
+    payslip?.isBeforeJoining ||
+    salary?.isBeforeJoining ||
+    (joiningYearMonth && period < joiningYearMonth)
+  );
+
   // Navigation handlers
   const handlePrevMonth = () => {
     const [y, m] = period.split("-").map(Number);
     const d = new Date(y, m - 2, 1);
-    setPeriod(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
+    const nextPeriod = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    if (joiningYearMonth && nextPeriod < joiningYearMonth) {
+      setActionError(`Payroll is not available prior to your date of joining (${formatPeriod(joiningYearMonth)}).`);
+      return;
+    }
+    setActionError("");
+    setPeriod(nextPeriod);
   };
 
   const handleNextMonth = () => {
     const [y, m] = period.split("-").map(Number);
     const d = new Date(y, m, 1);
+    setActionError("");
     setPeriod(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
   };
 
   // PDF Download Handler
   const handleDownload = async () => {
+    if (isPeriodBeforeJoining) {
+      setActionError("Payslips cannot be downloaded for periods prior to your date of joining.");
+      return;
+    }
     setDownloading(true);
     setActionError("");
     try {
@@ -388,7 +447,16 @@ function EmployeePayrollContent({ user, employee }) {
                 type="month"
                 className="period-input-control"
                 value={period}
-                onChange={(e) => setPeriod(e.target.value)}
+                min={joiningYearMonth || undefined}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (joiningYearMonth && val < joiningYearMonth) {
+                    setActionError(`Payroll is not available prior to your date of joining (${formatPeriod(joiningYearMonth)}).`);
+                    return;
+                  }
+                  setActionError("");
+                  setPeriod(val);
+                }}
                 aria-label="Select Pay Period"
               />
               <button
@@ -533,8 +601,40 @@ function EmployeePayrollContent({ user, employee }) {
         )}
 
         {/* =====================================================
-            SEGMENTED PORTAL TABS
+            JOINING DATE RESTRICTION NOTICE
         ===================================================== */}
+        {isPeriodBeforeJoining ? (
+          <section className="dash-panel-card" style={{ padding: "2rem", margin: "1.5rem 0", background: "#f8fafc", border: "1px solid #cbd5e1" }}>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: "1rem" }}>
+              <div style={{ fontSize: "2rem" }}>🛑</div>
+              <div>
+                <h3 style={{ margin: "0 0 0.5rem", color: "#0f172a", fontSize: "1.15rem" }}>
+                  Payroll Not Applicable Prior to Date of Joining
+                </h3>
+                <p style={{ margin: "0 0 1rem", color: "#475569", fontSize: "0.92rem", lineHeight: 1.5 }}>
+                  You joined Quadratic Systems on <strong>{joiningYearMonth ? formatPeriod(joiningYearMonth) : "a later date"}</strong>.
+                  Payroll records, monthly payslips, and statutory salary statements are not generated or accessible for pay periods prior to your official date of joining.
+                </p>
+                <div style={{ display: "flex", gap: "0.75rem" }}>
+                  <button
+                    type="button"
+                    className="hero-btn primary"
+                    onClick={() => {
+                      setActionError("");
+                      setPeriod(joiningYearMonth || initialPeriod);
+                    }}
+                  >
+                    Go to Joining Month ({joiningYearMonth ? formatPeriod(joiningYearMonth) : "Current"})
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
+        ) : (
+          <>
+            {/* =====================================================
+                SEGMENTED PORTAL TABS
+            ===================================================== */}
         <div className="payroll-nav-wrapper">
           <div className="payroll-segmented-nav" role="tablist">
             <button
@@ -994,6 +1094,8 @@ function EmployeePayrollContent({ user, employee }) {
               📌 <strong>Tax Declarations & Proof Submission:</strong> Under the New Tax Regime, taxable income up to ₹7,75,000 (after the ₹75,000 standard deduction) incurs zero tax liability via the Section 87A rebate. For regime switches or investment declarations, contact the HR Finance team before the December window closes.
             </div>
           </article>
+        )}
+          </>
         )}
       </main>
     </>

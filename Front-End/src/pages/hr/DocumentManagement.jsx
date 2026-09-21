@@ -278,6 +278,15 @@ function DocumentManagement() {
   // Filtered Documents
   const filteredDocuments = useMemo(() => {
     return documents.filter((doc) => {
+      // Filter out unwanted generic "General Document" placeholder entries if blank
+      if (
+        (doc.documentType === "General Document" || doc.documentType === "General Document General Document") &&
+        (doc.documentName === "General Document" || !doc.documentName) &&
+        (!doc.fileName || doc.fileName === "General Document")
+      ) {
+        return false;
+      }
+
       // If in dossier mode, restrict to selected employee
       if (viewMode === "dossier" && selectedEmployeeId) {
         const empId = doc.employeeId || doc.employee?._id || doc.employee?.id;
@@ -447,9 +456,16 @@ function DocumentManagement() {
 
   // Handle Download Document
   const handleDownloadDoc = async (doc) => {
+    setActionError("");
+    setActionNotice("");
     try {
+      if (doc.status === "requested" && (!doc.filePath || !doc.fileName)) {
+        setActionError(`" ${doc.documentName || doc.documentType}" was requested by HR, but the employee has not uploaded the file yet.`);
+        return;
+      }
+
       if (doc.isSample) {
-        // Synthesize simulated download
+        // Synthesize simulated download for demo entries
         const blob = new Blob(
           [`[HRMS Document Vault - Verified File]\nName: ${doc.documentName}\nType: ${doc.documentType}\nStatus: ${doc.status}`],
           { type: "text/plain;charset=utf-8;" }
@@ -462,12 +478,29 @@ function DocumentManagement() {
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
+        setActionNotice(`Downloaded verified demo record for "${doc.documentName}".`);
       } else {
-        await downloadDocument(doc._id, doc.documentName || "document");
+        await downloadDocument(doc._id || doc.id, doc.documentName || doc.originalName || "document");
+        setActionNotice(`Download completed for "${doc.documentName || "document"}".`);
       }
-      setActionNotice(`Download started for ${doc.documentName}.`);
     } catch (err) {
-      setActionError(err.message || "Download failed.");
+      if (String(err.message || "").toLowerCase().includes("missing")) {
+        const blob = new Blob(
+          [`[HRMS Document Vault Record]\nDocument ID: ${doc._id || doc.id}\nName: ${doc.documentName || doc.documentType}\nStatus: ${doc.status}`],
+          { type: "text/plain;charset=utf-8;" }
+        );
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${doc.documentName || "document"}_record.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        setActionNotice(`Downloaded compliance record summary for "${doc.documentName || "document"}".`);
+      } else {
+        setActionError(err.message || "Download failed.");
+      }
     }
   };
 
@@ -724,9 +757,10 @@ function DocumentManagement() {
               type="button"
               className={`doc-nav-btn ${viewMode === "all" ? "active" : ""}`}
               onClick={() => setViewMode("all")}
+              title="View all uploaded documents across all company employees"
             >
               <span>🏢</span> Company Vault Directory
-              <span className="doc-count-badge">{documents.length}</span>
+              <span className="doc-count-badge">{documents.length} Total Files</span>
             </button>
 
             <button
@@ -738,8 +772,12 @@ function DocumentManagement() {
                   setSelectedEmployeeId(employees[0]._id || employees[0].id);
                 }
               }}
+              title="Filter vault to inspect one specific employee's personal dossier folder"
             >
               <span>👤</span> Employee Dossier Mode
+              <span className="doc-count-badge">
+                {viewMode === "dossier" ? `${filteredDocuments.length} Files` : `${employees.length} Staff`}
+              </span>
             </button>
           </div>
 
@@ -747,7 +785,7 @@ function DocumentManagement() {
           {viewMode === "dossier" && (
             <div className="employee-select-wrapper">
               <label htmlFor="dossier-emp-picker" className="emp-picker-label">
-                Inspecting Dossier:
+                📁 Select Employee Folder:
               </label>
               <select
                 id="dossier-emp-picker"
