@@ -14,8 +14,9 @@ function normalizeWeek(response) {
   let entries = Array.isArray(data.entries) ? data.entries : [];
 
   // Calculate unsubmitted for today (EOD check helper)
-  const todayDateStr = new Date().toISOString().slice(0, 10);
-  const todaysTimesheet = entries.find(e => e.date === todayDateStr);
+  const localDate = new Date();
+  const todayDateStr = new Date(localDate.getTime() - localDate.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+  const todaysTimesheet = entries.find(e => (e.date || "").substring(0, 10) === todayDateStr);
   const hasUnsubmittedToday = !todaysTimesheet || ["draft", "rejected"].includes(todaysTimesheet.status);
 
   // EOD threshold (e.g., 5:00 PM local)
