@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: hrms-backend
+    env: node
+    plan: free
+    rootDir: Back-End/HRMSBackend
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: NODE_VERSION
+        value: 20.18.0
+      - key: JWT_SECRET
+        generateValue: true
+      - key: MONGO_URL
+        sync: false
+      - key: FRONTEND_URL
+        value: https://employtracking.netlify.app

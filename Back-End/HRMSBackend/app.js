@@ -23,12 +23,18 @@ const allowedOrigins = [
   "http://127.0.0.1:5173",
   "http://localhost:3000",
   "http://127.0.0.1:3000",
-];
+  "https://employtracking.netlify.app",
+  process.env.FRONTEND_URL,
+].filter(Boolean);
 
 app.use(
   cors({
     origin(origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (
+        !origin ||
+        allowedOrigins.includes(origin) ||
+        /\.netlify\.app$/.test(new URL(origin).hostname)
+      ) {
         return callback(null, true);
       }
       return callback(new Error(`CORS origin not allowed: ${origin}`));

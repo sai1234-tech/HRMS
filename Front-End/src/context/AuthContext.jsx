@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { getCurrentUser, loginUser, signupUser } from "../services/authService";
 import { normalizeRole } from "../utils/auth";
+import { getDemoFallbackSession } from "../data/demoAccounts";
 
 const AuthContext = createContext(null);
 
@@ -28,8 +29,20 @@ export function AuthProvider({ children }) {
   };
 
   const login = async (email, password) => {
-    const response = await loginUser({ email, password });
-    return saveSession(response);
+    try {
+      const response = await loginUser({ email, password });
+      sessionStorage.removeItem("hrms_demo_mode");
+      return saveSession(response);
+    } catch (apiError) {
+      // If backend is unreachable or on a static deploy like Netlify, gracefully fall back to Demo Mode
+      const demoSession = getDemoFallbackSession(email);
+      if (demoSession) {
+        console.warn("[Auth] Backend unreachable, falling back to Demo Mode:", demoSession.user.role);
+        sessionStorage.setItem("hrms_demo_mode", "true");
+        return saveSession(demoSession);
+      }
+      throw apiError;
+    }
   };
 
   const signup = async (userData) => {
@@ -73,6 +86,7 @@ export function AuthProvider({ children }) {
     sessionStorage.removeItem("hrms_user");
     sessionStorage.removeItem("hrms_employee");
     sessionStorage.removeItem("hrms_profile_photo");
+    sessionStorage.removeItem("hrms_demo_mode");
     localStorage.removeItem("hrms_profile_photo");
 
     setUser(null);
@@ -81,17 +95,34 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     const restoreSession = async () => {
-      const token =
-        sessionStorage.getItem("hrms_token");
+      const token = sessionStorage.getItem("hrms_token");
 
       if (!token) {
         setLoading(false);
         return;
       }
 
+      // Check if session is a standalone demo session
+      if (
+        token.startsWith("demo-token-") ||
+        sessionStorage.getItem("hrms_demo_mode") === "true"
+      ) {
+        try {
+          const storedUser = JSON.parse(sessionStorage.getItem("hrms_user") || "null");
+          const storedEmp = JSON.parse(sessionStorage.getItem("hrms_employee") || "null");
+          if (storedUser) {
+            setUser({ ...storedUser, role: normalizeRole(storedUser) });
+            setEmployee(storedEmp);
+            setLoading(false);
+            return;
+          }
+        } catch (e) {
+          // ignore parse error and proceed to normal flow
+        }
+      }
+
       try {
-        const response =
-          await getCurrentUser();
+        const response = await getCurrentUser();
 
         const session = response?.data && response.data.user ? response.data : response;
         setUser({ ...session.user, role: normalizeRole(session.user) });
@@ -104,7 +135,9 @@ export function AuthProvider({ children }) {
           localStorage.setItem("hrms_profile_photo", cachedPhoto);
         }
       } catch (error) {
-        logout();
+        if (!token.startsWith("demo-token-")) {
+          logout();
+        }
       } finally {
         setLoading(false);
       }

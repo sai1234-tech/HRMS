@@ -1,5 +1,6 @@
 import NProgress from "nprogress";
 import { broadcastDataChange, isBackgroundSync } from "../utils/syncManager";
+import { handleDemoApi } from "../data/demoAccounts";
 
 // Configure NProgress with spinner enabled for a more effective loading indication
 NProgress.configure({ showSpinner: true, minimum: 0.1, speed: 400 });
@@ -38,10 +39,18 @@ function toggleGlobalLoader(isLoading) {
 
 export async function apiRequest(endpoint, options = {}) {
   const token = sessionStorage.getItem("hrms_token");
+  const isDemo =
+    sessionStorage.getItem("hrms_demo_mode") === "true" ||
+    (token && token.startsWith("demo-token-"));
 
   const normalizedEndpoint = endpoint.startsWith("/")
     ? endpoint
     : `/${endpoint}`;
+
+  // If in Standalone Demo Mode (e.g. on Netlify preview with no backend)
+  if (isDemo && !normalizedEndpoint.includes("/auth/login")) {
+    return handleDemoApi(normalizedEndpoint, options);
+  }
 
   const url = `${API_BASE_URL}${normalizedEndpoint}`;
 
