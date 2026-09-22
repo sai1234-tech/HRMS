@@ -361,38 +361,233 @@ export function handleDemoApi(endpoint, options = {}) {
     };
   }
 
-  if (norm.includes("/leave")) {
+  // LEAVES API
+  if (norm.includes("/leaves/types") || norm.includes("/leave/types")) {
+    const types = [
+      { _id: "lt-1", id: "lt-1", name: "Casual Leave", code: "CL", daysAllowed: 12 },
+      { _id: "lt-2", id: "lt-2", name: "Sick Leave", code: "SL", daysAllowed: 10 },
+      { _id: "lt-3", id: "lt-3", name: "Paid Privilege Leave", code: "PL", daysAllowed: 18 },
+      { _id: "lt-4", id: "lt-4", name: "Work From Home", code: "WFH", daysAllowed: 24 },
+    ];
     return {
       success: true,
-      data: {
-        balances: { casual: 8, sick: 10, paid: 15 },
-        requests: [
-          { id: "lv-1", type: "Casual Leave", fromDate: "2026-09-28", toDate: "2026-09-29", status: "Approved", reason: "Personal work" },
+      data: types,
+      types: types,
+      leaveTypes: types,
+    };
+  }
+
+  if (norm.includes("/leaves/balance") || norm.includes("/leave/balance")) {
+    const balances = [
+      { leaveType: { _id: "lt-1", name: "Casual Leave", code: "CL" }, total: 12, used: 4, remaining: 8 },
+      { leaveType: { _id: "lt-2", name: "Sick Leave", code: "SL" }, total: 10, used: 2, remaining: 8 },
+      { leaveType: { _id: "lt-3", name: "Paid Privilege Leave", code: "PL" }, total: 18, used: 3, remaining: 15 },
+      { leaveType: { _id: "lt-4", name: "Work From Home", code: "WFH" }, total: 24, used: 6, remaining: 18 },
+    ];
+    return {
+      success: true,
+      data: balances,
+      balance: balances,
+    };
+  }
+
+  if (norm.includes("/leaves") || norm.includes("/leave")) {
+    if (method === "POST" || method === "PATCH" || method === "PUT" || method === "DELETE") {
+      window.dispatchEvent(new CustomEvent("hrms:data_changed"));
+      return { success: true, message: "Leave action saved successfully" };
+    }
+
+    const requests = [
+      {
+        _id: "lv-1",
+        id: "lv-1",
+        leaveType: { _id: "lt-1", name: "Casual Leave", code: "CL" },
+        startDate: "2026-09-28",
+        endDate: "2026-09-29",
+        days: 2,
+        reason: "Family engagement",
+        status: "Approved",
+        appliedAt: "2026-09-18T10:30:00Z",
+      },
+      {
+        _id: "lv-2",
+        id: "lv-2",
+        leaveType: { _id: "lt-2", name: "Sick Leave", code: "SL" },
+        startDate: "2026-09-12",
+        endDate: "2026-09-12",
+        days: 1,
+        reason: "Medical appointment",
+        status: "Approved",
+        appliedAt: "2026-09-11T09:15:00Z",
+      },
+      {
+        _id: "lv-3",
+        id: "lv-3",
+        leaveType: { _id: "lt-4", name: "Work From Home", code: "WFH" },
+        startDate: "2026-09-04",
+        endDate: "2026-09-05",
+        days: 2,
+        reason: "Home internet installation",
+        status: "Approved",
+        appliedAt: "2026-09-02T14:00:00Z",
+      },
+    ];
+
+    return {
+      success: true,
+      data: requests,
+      leaves: requests,
+      records: requests,
+    };
+  }
+
+  // PAYROLL API
+  if (norm.includes("/payroll")) {
+    const payload = {
+      _id: "pay-sep-2026",
+      id: "pay-sep-2026",
+      month: "2026-09",
+      basicSalary: 95000,
+      allowances: 38000,
+      bonus: 15000,
+      tax: 12000,
+      pf: 6000,
+      otherDeductions: 0,
+      totalDeductions: 18000,
+      grossSalary: 148000,
+      netSalary: 130000,
+      status: "Generated",
+      generatedAt: "2026-09-20T00:00:00.000Z",
+      earnings: {
+        basicSalary: 95000,
+        allowances: 38000,
+        bonus: 15000,
+      },
+      deductions: {
+        tax: 12000,
+        pf: 6000,
+        otherDeductions: 0,
+      },
+    };
+
+    return {
+      success: true,
+      data: payload,
+      payslip: payload,
+      payroll: payload,
+      records: [payload],
+    };
+  }
+
+  // DOCUMENTS API
+  if (norm.includes("/documents/types") || norm.includes("/document/types")) {
+    const types = [
+      "Aadhaar / National ID",
+      "PAN Card",
+      "Passport",
+      "Academic Degree",
+      "Offer Letter",
+      "Relieving Letter",
+    ];
+    return {
+      success: true,
+      data: types,
+    };
+  }
+
+  if (norm.includes("/documents") || norm.includes("/document")) {
+    if (method === "POST" || method === "PUT" || method === "DELETE") {
+      window.dispatchEvent(new CustomEvent("hrms:data_changed"));
+      return { success: true, message: "Document saved successfully" };
+    }
+
+    const docs = [
+      {
+        _id: "doc-1",
+        id: "doc-1",
+        documentType: "Aadhaar / National ID",
+        documentName: "Aadhaar_National_ID.pdf",
+        status: "verified",
+        uploadedAt: "2026-08-10T10:00:00Z",
+      },
+      {
+        _id: "doc-2",
+        id: "doc-2",
+        documentType: "PAN Card",
+        documentName: "PAN_Card_Verified.pdf",
+        status: "verified",
+        uploadedAt: "2026-08-10T10:05:00Z",
+      },
+      {
+        _id: "doc-3",
+        id: "doc-3",
+        documentType: "Academic Degree",
+        documentName: "Bachelor_Degree_Certificate.pdf",
+        status: "approved",
+        uploadedAt: "2026-08-12T15:30:00Z",
+      },
+    ];
+
+    return {
+      success: true,
+      data: docs,
+      documents: docs,
+    };
+  }
+
+  // TICKETS / HELPDESK API
+  if (norm.includes("/ticket")) {
+    const tickets = [
+      {
+        _id: "t-1",
+        id: "t-1",
+        ticketNumber: "TICK-101",
+        title: "VPN Profile Setup for Remote Work",
+        category: "IT Support",
+        priority: "Medium",
+        status: "Resolved",
+        createdAt: "2026-09-15T09:00:00Z",
+      },
+      {
+        _id: "t-2",
+        id: "t-2",
+        ticketNumber: "TICK-102",
+        title: "Tax Deduction Certificate Request",
+        category: "Finance & Payroll",
+        priority: "Low",
+        status: "In Progress",
+        createdAt: "2026-09-18T11:20:00Z",
+      },
+    ];
+
+    return {
+      success: true,
+      data: tickets,
+      tickets: tickets,
+    };
+  }
+
+  // PERFORMANCE API
+  if (norm.includes("/performance")) {
+    const reviews = [
+      {
+        _id: "perf-1",
+        period: "Q2 2026 Review",
+        rating: 4.8,
+        status: "Completed",
+        managerFeedback: "Exceptional architecture delivery, consistent punctuality, and great teamwork.",
+        kpis: [
+          { name: "Code Quality & Delivery", score: "95%" },
+          { name: "Sprint Velocity", score: "98%" },
+          { name: "Collaboration", score: "92%" },
         ],
       },
-    };
-  }
+    ];
 
-  if (norm.includes("/payroll")) {
     return {
       success: true,
-      data: {
-        month: "September 2026",
-        basicPay: 95000,
-        hra: 38000,
-        allowances: 15000,
-        deductions: 12000,
-        netPay: 136000,
-        status: "Processed",
-      },
-    };
-  }
-
-  if (norm.includes("/document")) {
-    return {
-      success: true,
-      data: [],
-      documents: [],
+      data: reviews,
+      records: reviews,
     };
   }
 
