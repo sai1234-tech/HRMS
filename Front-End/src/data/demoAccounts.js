@@ -1,90 +1,154 @@
 import { WORKFORCE_DIRECTORY } from "./workforceDirectory";
 
+// Dictionary of verified accounts & registered team members
+const KNOWN_ACCOUNTS = {
+  "narsimhakushangala@gmail.com": {
+    firstName: "Narsimha",
+    lastName: "Kushangala",
+    department: "Engineering",
+    designation: "Software Engineer",
+    role: "employee",
+  },
+  "simhavahiniganesh@gmail.com": {
+    firstName: "Simhavahini",
+    lastName: "Ganesh",
+    department: "Operations",
+    designation: "Operations Specialist",
+    role: "employee",
+  },
+  "saikirankushangala@gmail.com": {
+    firstName: "SaiKiran",
+    lastName: "Kushangala",
+    department: "Engineering",
+    designation: "Full Stack Engineer",
+    role: "employee",
+  },
+  "kirankushangala@gmail.com": {
+    firstName: "Sai Kiran",
+    lastName: "Kushangala",
+    department: "Engineering",
+    designation: "Software Engineer",
+    role: "employee",
+  },
+  "admin@hrms.com": {
+    firstName: "System",
+    lastName: "Administrator",
+    department: "Executive Leadership",
+    designation: "Chief Administrator",
+    role: "admin",
+  },
+  "hr@hrms.com": {
+    firstName: "Priya",
+    lastName: "Nair",
+    department: "Human Resources",
+    designation: "HR Manager",
+    role: "hr",
+  },
+  "employee@hrms.com": {
+    firstName: "Demo",
+    lastName: "Employee",
+    department: "Engineering",
+    designation: "Frontend Engineer",
+    role: "employee",
+  },
+};
+
+function capitalize(str = "") {
+  if (!str) return "";
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+export function deriveNameFromEmail(email = "") {
+  if (!email) return { firstName: "Employee", lastName: "" };
+  const localPart = email.split("@")[0] || "";
+
+  // If camelCase (e.g. simhavahiniGanesh)
+  const splitCamel = localPart.replace(/([a-z])([A-Z])/g, "$1 $2");
+  if (splitCamel.includes(" ")) {
+    const parts = splitCamel.split(" ").filter(Boolean);
+    return {
+      firstName: capitalize(parts[0]),
+      lastName: parts.slice(1).map(capitalize).join(" "),
+    };
+  }
+
+  // If separated by dot, hyphen, or underscore
+  if (/[._-]/.test(localPart)) {
+    const parts = localPart.split(/[._-]+/).filter(Boolean);
+    return {
+      firstName: capitalize(parts[0]),
+      lastName: parts.slice(1).map(capitalize).join(" "),
+    };
+  }
+
+  // Fallback for single continuous string (e.g. narsimhakushangala)
+  return {
+    firstName: capitalize(localPart),
+    lastName: "",
+  };
+}
+
 export function getDemoFallbackSession(email = "") {
   const cleanEmail = (email || "").trim().toLowerCase();
+  const known = KNOWN_ACCOUNTS[cleanEmail];
 
-  if (cleanEmail.includes("admin")) {
-    return {
-      token: `demo-token-admin-${Date.now()}`,
-      user: {
-        _id: "demo-admin-id",
-        name: "System Administrator",
-        email: "admin@hrms.com",
-        role: "admin",
-        isDemo: true,
-      },
-      employee: {
-        _id: "emp-ceo",
-        employeeCode: "QSI-001",
-        firstName: "System",
-        lastName: "Administrator",
-        name: "System Administrator",
-        email: "admin@hrms.com",
-        phone: "+91 98201 11001",
-        employment: {
-          department: "Executive Leadership",
-          designation: "Chief Administrator",
-          status: "Active",
-          employmentType: "Full Time Permanent",
-          joiningDate: "2020-01-01",
-        },
-      },
-    };
+  let firstName = "";
+  let lastName = "";
+  let role = "employee";
+  let department = "Engineering";
+  let designation = "Software Engineer";
+
+  if (known) {
+    firstName = known.firstName;
+    lastName = known.lastName;
+    role = known.role || "employee";
+    department = known.department;
+    designation = known.designation;
+  } else if (cleanEmail.includes("admin")) {
+    firstName = "System";
+    lastName = "Administrator";
+    role = "admin";
+    department = "Executive Leadership";
+    designation = "System Administrator";
+  } else if (cleanEmail.includes("hr")) {
+    firstName = "HR";
+    lastName = "Manager";
+    role = "hr";
+    department = "Human Resources";
+    designation = "HR Manager";
+  } else {
+    const derived = deriveNameFromEmail(cleanEmail);
+    firstName = derived.firstName;
+    lastName = derived.lastName;
+    role = "employee";
   }
 
-  if (cleanEmail.includes("hr")) {
-    return {
-      token: `demo-token-hr-${Date.now()}`,
-      user: {
-        _id: "demo-hr-id",
-        name: "Priya Nair",
-        email: "hr@hrms.com",
-        role: "hr",
-        isDemo: true,
-      },
-      employee: {
-        _id: "emp-hr-lead",
-        employeeCode: "QSI-006",
-        firstName: "Priya",
-        lastName: "Nair",
-        name: "Priya Nair",
-        email: "hr@hrms.com",
-        phone: "+91 98201 11006",
-        employment: {
-          department: "Human Resources",
-          designation: "HR Manager",
-          status: "Active",
-          employmentType: "Full Time Permanent",
-          joiningDate: "2021-02-15",
-        },
-      },
-    };
-  }
+  const fullName = `${firstName} ${lastName}`.trim();
+  const employeeCode = `EMP-${Math.abs(cleanEmail.split("").reduce((acc, c) => ((acc << 5) - acc) + c.charCodeAt(0), 0) % 9000 + 1000)}`;
 
-  // Default to Employee
   return {
-    token: `demo-token-employee-${Date.now()}`,
+    token: `demo-token-${role}-${Date.now()}`,
     user: {
-      _id: "demo-emp-id",
-      name: "Kavita Rao",
+      _id: `user-${cleanEmail.replace(/[^a-z0-9]/g, "")}`,
+      name: fullName,
       email: cleanEmail || "employee@hrms.com",
-      role: "employee",
+      role: role,
       isDemo: true,
     },
     employee: {
-      _id: "emp-fe-lead",
-      employeeCode: "QSI-004",
-      firstName: "Kavita",
-      lastName: "Rao",
-      name: "Kavita Rao",
+      _id: `emp-${cleanEmail.replace(/[^a-z0-9]/g, "")}`,
+      employeeCode: employeeCode,
+      firstName: firstName,
+      lastName: lastName,
+      name: fullName,
       email: cleanEmail || "employee@hrms.com",
-      phone: "+91 98201 11004",
+      phone: "+91 98000 00000",
       employment: {
-        department: "Engineering",
-        designation: "Senior Frontend Engineer",
+        department: department,
+        designation: designation,
         status: "Active",
         employmentType: "Full Time Permanent",
-        joiningDate: "2022-03-01",
+        joiningDate: "2023-01-15",
       },
     },
   };
@@ -95,6 +159,21 @@ export function handleDemoApi(endpoint, options = {}) {
   const method = (options.method || "GET").toUpperCase();
 
   console.info(`[Demo Mode API] Handled ${method} ${endpoint}`);
+
+  // Current session user / employee resolution (CRITICAL: Must return the logged-in user, not random)
+  if (norm.includes("/employee/me") || norm.includes("/auth/me")) {
+    const userStr = sessionStorage.getItem("hrms_user");
+    const empStr = sessionStorage.getItem("hrms_employee");
+    const user = userStr ? JSON.parse(userStr) : null;
+    const employee = empStr ? JSON.parse(empStr) : user;
+
+    return {
+      success: true,
+      data: employee || user,
+      employee: employee || user,
+      user: user,
+    };
+  }
 
   if (norm.includes("/auth/admin-summary")) {
     return {
@@ -109,26 +188,16 @@ export function handleDemoApi(endpoint, options = {}) {
         monthlyPayroll: 1845000,
         systemStatus: "Healthy (Demo Mode)",
         recentAudits: [
-          { id: "aud-1", action: "Timesheet Approved", user: "Priya Nair", timestamp: new Date().toISOString() },
-          { id: "aud-2", action: "Employee Profile Updated", user: "Kavita Rao", timestamp: new Date().toISOString() },
-          { id: "aud-3", action: "Leave Request Approved", user: "Rahul Sharma", timestamp: new Date().toISOString() },
+          { id: "aud-1", action: "Timesheet Approved", user: "HR Team", timestamp: new Date().toISOString() },
+          { id: "aud-2", action: "Profile Updated", user: "Self Service", timestamp: new Date().toISOString() },
+          { id: "aud-3", action: "Leave Request Approved", user: "Manager", timestamp: new Date().toISOString() },
         ],
       },
     };
   }
 
-  if (norm.includes("/auth/me")) {
-    const userStr = sessionStorage.getItem("hrms_user");
-    const empStr = sessionStorage.getItem("hrms_employee");
-    const user = userStr ? JSON.parse(userStr) : getDemoFallbackSession().user;
-    const employee = empStr ? JSON.parse(empStr) : getDemoFallbackSession().employee;
-    return {
-      success: true,
-      data: { user, employee },
-    };
-  }
-
-  if (norm.includes("/employee") || norm.includes("/workforce")) {
+  // Directory list (only when querying collection of employees, NOT /employee/me)
+  if (norm.includes("/employees") || norm.includes("/workforce") || norm === "/employee" || norm === "/api/v1/employee") {
     const formatted = WORKFORCE_DIRECTORY.map((emp) => ({
       _id: emp.id,
       id: emp.id,
@@ -175,7 +244,6 @@ export function handleDemoApi(endpoint, options = {}) {
         { _id: "att-1", date: today, punchIn: "09:05 AM", punchOut: null, status: "Present", workHours: 4.8 },
         { _id: "att-2", date: "2026-09-21", punchIn: "09:00 AM", punchOut: "06:00 PM", status: "Present", workHours: 8.5 },
         { _id: "att-3", date: "2026-09-20", punchIn: "09:12 AM", punchOut: "06:15 PM", status: "Present", workHours: 8.2 },
-        { _id: "att-4", date: "2026-09-19", punchIn: "08:55 AM", punchOut: "05:58 PM", status: "Present", workHours: 8.1 },
       ],
     };
   }
@@ -186,7 +254,7 @@ export function handleDemoApi(endpoint, options = {}) {
       success: true,
       data: {
         entries: [
-          { id: "ts-1", date: today, hours: 8, project: "HRMS Enterprise Portal", task: "Demo Mode Testing", status: "submitted" },
+          { id: "ts-1", date: today, hours: 8, project: "HRMS Enterprise Portal", task: "Feature testing & review", status: "submitted" },
           { id: "ts-2", date: "2026-09-21", hours: 8, project: "HRMS Enterprise Portal", task: "Core UI Flow", status: "approved" },
           { id: "ts-3", date: "2026-09-20", hours: 8, project: "Platform Architecture", task: "Vite and Netlify Deployment", status: "approved" },
         ],
@@ -202,7 +270,7 @@ export function handleDemoApi(endpoint, options = {}) {
       data: {
         balances: { casual: 8, sick: 10, paid: 15 },
         requests: [
-          { id: "lv-1", type: "Casual Leave", fromDate: "2026-09-28", toDate: "2026-09-29", status: "Approved", reason: "Family event" },
+          { id: "lv-1", type: "Casual Leave", fromDate: "2026-09-28", toDate: "2026-09-29", status: "Approved", reason: "Personal work" },
         ],
       },
     };
@@ -220,6 +288,14 @@ export function handleDemoApi(endpoint, options = {}) {
         netPay: 136000,
         status: "Processed",
       },
+    };
+  }
+
+  if (norm.includes("/document")) {
+    return {
+      success: true,
+      data: [],
+      documents: [],
     };
   }
 

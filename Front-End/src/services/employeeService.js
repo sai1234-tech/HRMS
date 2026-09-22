@@ -9,29 +9,55 @@ let mockEmployees = [
 export async function getEmployee() {
   try {
     const res = await apiRequest("/employee/me");
-    return {
-      success: true,
-      data: res.employee || res.user,
-      employee: res.employee,
-      user: res.user,
-    };
+    if (res && (res.employee || res.user || res.data)) {
+      return {
+        success: true,
+        data: res.employee || res.user || res.data,
+        employee: res.employee || res.data,
+        user: res.user,
+      };
+    }
   } catch (err) {
     try {
       const authRes = await apiRequest("/auth/me");
-      return {
-        success: true,
-        data: authRes.employee || authRes.user,
-        employee: authRes.employee,
-        user: authRes.user,
-      };
+      if (authRes && (authRes.employee || authRes.user || authRes.data)) {
+        return {
+          success: true,
+          data: authRes.employee || authRes.user || authRes.data,
+          employee: authRes.employee || authRes.data,
+          user: authRes.user,
+        };
+      }
     } catch (authErr) {
-      return {
-        success: false,
-        data: mockEmployees[0],
-        employee: mockEmployees[0],
-      };
+      // Continue to session fallback
     }
   }
+
+  // Always resolve to the active logged-in user rather than random mock profiles
+  try {
+    const storedEmp = sessionStorage.getItem("hrms_employee")
+      ? JSON.parse(sessionStorage.getItem("hrms_employee"))
+      : null;
+    const storedUser = sessionStorage.getItem("hrms_user")
+      ? JSON.parse(sessionStorage.getItem("hrms_user"))
+      : null;
+
+    if (storedEmp || storedUser) {
+      return {
+        success: true,
+        data: storedEmp || storedUser,
+        employee: storedEmp || storedUser,
+        user: storedUser,
+      };
+    }
+  } catch (e) {}
+
+  return {
+    success: false,
+    data: null,
+    employee: null,
+    user: null,
+  };
 }
 
 export async function updateMyProfile(profileData) {

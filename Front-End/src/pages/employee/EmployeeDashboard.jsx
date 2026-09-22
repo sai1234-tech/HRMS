@@ -107,9 +107,16 @@ function EmployeeDashboard() {
   const fullName =
     profile.name ||
     `${profile.firstName || ""} ${profile.lastName || ""}`.trim() ||
+    sessionEmployee?.name ||
     user?.name ||
-    "Alex Morgan";
-  const firstName = fullName.split(" ")[0];
+    (user?.email ? user.email.split("@")[0] : "") ||
+    "Employee";
+
+  const firstName =
+    profile.firstName ||
+    sessionEmployee?.firstName ||
+    fullName.split(" ")[0] ||
+    "Employee";
 
   const employeeCode =
     profile.employeeCode ||
