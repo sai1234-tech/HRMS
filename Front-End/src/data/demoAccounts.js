@@ -236,15 +236,112 @@ export function handleDemoApi(endpoint, options = {}) {
     };
   }
 
-  if (norm.includes("/attendance")) {
+  // Interactive Clock In handling
+  if (norm.includes("/attendance/check-in")) {
     const today = new Date().toISOString().slice(0, 10);
+    const now = new Date();
+    const existingStr = localStorage.getItem("hrms_demo_attendance");
+    let history = existingStr ? JSON.parse(existingStr) : [];
+
+    let todayRecord = history.find((r) => (r.date || "").startsWith(today));
+    if (!todayRecord) {
+      todayRecord = {
+        _id: `att-demo-${Date.now()}`,
+        id: `att-demo-${Date.now()}`,
+        date: today,
+        checkIn: now.toISOString(),
+        checkOut: null,
+        status: "Present",
+        workingHours: 0,
+      };
+      history.unshift(todayRecord);
+    } else if (!todayRecord.checkIn) {
+      todayRecord.checkIn = now.toISOString();
+    }
+
+    localStorage.setItem("hrms_demo_attendance", JSON.stringify(history));
+    window.dispatchEvent(new CustomEvent("hrms:data_changed"));
+
     return {
       success: true,
-      data: [
-        { _id: "att-1", date: today, punchIn: "09:05 AM", punchOut: null, status: "Present", workHours: 4.8 },
-        { _id: "att-2", date: "2026-09-21", punchIn: "09:00 AM", punchOut: "06:00 PM", status: "Present", workHours: 8.5 },
-        { _id: "att-3", date: "2026-09-20", punchIn: "09:12 AM", punchOut: "06:15 PM", status: "Present", workHours: 8.2 },
-      ],
+      message: "Check-in successful",
+      data: {
+        attendance: todayRecord,
+      },
+    };
+  }
+
+  // Interactive Clock Out handling
+  if (norm.includes("/attendance/check-out")) {
+    const today = new Date().toISOString().slice(0, 10);
+    const now = new Date();
+    const existingStr = localStorage.getItem("hrms_demo_attendance");
+    let history = existingStr ? JSON.parse(existingStr) : [];
+
+    let todayRecord = history.find((r) => (r.date || "").startsWith(today));
+    if (todayRecord) {
+      todayRecord.checkOut = now.toISOString();
+      const inTime = new Date(todayRecord.checkIn).getTime();
+      const outTime = now.getTime();
+      const diffHours = Math.max(0.1, Number(((outTime - inTime) / (1000 * 60 * 60)).toFixed(2)));
+      todayRecord.workingHours = diffHours;
+      todayRecord.status = "Completed";
+    }
+
+    localStorage.setItem("hrms_demo_attendance", JSON.stringify(history));
+    window.dispatchEvent(new CustomEvent("hrms:data_changed"));
+
+    return {
+      success: true,
+      message: "Check-out successful",
+      data: {
+        attendance: todayRecord,
+      },
+    };
+  }
+
+  // Today's attendance query
+  if (norm.includes("/attendance/today")) {
+    const today = new Date().toISOString().slice(0, 10);
+    const existingStr = localStorage.getItem("hrms_demo_attendance");
+    const history = existingStr ? JSON.parse(existingStr) : [];
+    const todayRecord = history.find((r) => (r.date || "").startsWith(today));
+
+    if (todayRecord && todayRecord.checkIn) {
+      return {
+        success: true,
+        data: {
+          attendance: todayRecord,
+        },
+        attendance: todayRecord,
+      };
+    }
+
+    return {
+      success: true,
+      data: null,
+      message: "No attendance found for today",
+    };
+  }
+
+  // History & ledger query
+  if (norm.includes("/attendance")) {
+    const existingStr = localStorage.getItem("hrms_demo_attendance");
+    let history = existingStr ? JSON.parse(existingStr) : [];
+
+    if (history.length === 0) {
+      history = [
+        { _id: "att-hist-1", id: "att-hist-1", date: "2026-09-21", checkIn: "2026-09-21T09:00:00.000Z", checkOut: "2026-09-21T18:00:00.000Z", status: "Present", workingHours: 8.5 },
+        { _id: "att-hist-2", id: "att-hist-2", date: "2026-09-20", checkIn: "2026-09-20T09:12:00.000Z", checkOut: "2026-09-20T18:15:00.000Z", status: "Present", workingHours: 8.2 },
+        { _id: "att-hist-3", id: "att-hist-3", date: "2026-09-19", checkIn: "2026-09-19T08:58:00.000Z", checkOut: "2026-09-19T18:05:00.000Z", status: "Present", workingHours: 8.1 },
+      ];
+      localStorage.setItem("hrms_demo_attendance", JSON.stringify(history));
+    }
+
+    return {
+      success: true,
+      data: history,
+      records: history,
     };
   }
 

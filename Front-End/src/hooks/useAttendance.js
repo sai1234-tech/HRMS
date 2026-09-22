@@ -47,8 +47,14 @@ export function useAttendance() {
   useSyncRefresh(loadAttendance, { interval: 30000, silent: true });
 
   const performAction = async (action) => {
-    await action();
-    await loadAttendance(true);
+    try {
+      setError("");
+      await action();
+      await loadAttendance(true);
+    } catch (err) {
+      setError(err.message || "Attendance action failed");
+      console.error("[useAttendance] Action failed:", err);
+    }
   };
 
   return {
