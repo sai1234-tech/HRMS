@@ -1108,12 +1108,7 @@ function EmployeePayrollContent({ user, employee }) {
 
 function EmployeePayroll() {
   const { user, employee } = useAuth();
-
-  return ["employee", "hr"].includes(normalizeRole(user)) ? (
-    <EmployeePayrollContent user={user} employee={employee} />
-  ) : (
-    <Navigate to="/hr/payroll" replace />
-  );
+  return <EmployeePayrollContent user={user} employee={employee} />;
 }
 
 export default EmployeePayroll;

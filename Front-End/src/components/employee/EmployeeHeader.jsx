@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useSidebar } from "../../context/SidebarContext";
 import { getEmployee } from "../../services/employeeService";
@@ -39,6 +39,8 @@ const ROUTE_CONTEXT_MAP = {
   "/hr/timesheets": { section: "Operations", title: "Timesheets" },
   "/hr/payroll": { section: "Operations", title: "Payroll Run" },
   "/hr/documents": { section: "Vault", title: "Company Documents" },
+  "/manager/dashboard": { section: "Manager Workspace", title: "Team Approvals" },
+  "/manager/projects": { section: "Manager Workspace", title: "Active Projects" },
   "/admin/dashboard": { section: "Admin", title: "Executive Command" },
   "/admin/accounts": { section: "Security", title: "User Accounts" },
 };
@@ -47,10 +49,19 @@ function EmployeeHeader() {
   const { user, employee, logout } = useAuth();
   const { isCollapsed, toggleSidebar } = useSidebar();
   const location = useLocation();
+  const navigate = useNavigate();
 
   const [showNotifications, setShowNotifications] = useState(false);
   const [currentTime, setCurrentTime] = useState("");
   const [requestedDocs, setRequestedDocs] = useState([]);
+  const [clearedNotificationIds, setClearedNotificationIds] = useState(() => {
+    try {
+      const stored = localStorage.getItem("hrms_cleared_notifications");
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  });
   const dropdownRef = useRef(null);
 
   const [headerPhoto, setHeaderPhoto] = useState(() => {
@@ -190,7 +201,9 @@ function EmployeeHeader() {
     .map((w) => w[0].toUpperCase())
     .join("") || "QS";
 
-  const roleLabel = isHr
+  const roleLabel = role === "manager"
+    ? "Team Manager"
+    : isHr
     ? "HR Lead"
     : isAdmin
     ? "Administrator"
@@ -200,31 +213,66 @@ function EmployeeHeader() {
     return ROUTE_CONTEXT_MAP[location.pathname] || { section: "Portal", title: "Quadratic HRMS" };
   }, [location.pathname]);
 
-  const docNotifications = requestedDocs.map((doc) => ({
-    id: `doc-req-${doc._id || doc.id}`,
-    title: doc.status === "requested" ? "📨 HR Document Requested" : "✕ Document Rejected",
-    desc: `${doc.documentType || doc.documentName || "Document"}: ${doc.requestNote || doc.verificationNotes || "Upload requested by HR."}`,
-    time: "Action Needed",
-    link: "/employee/documents",
-  }));
+  const rawNotifications = useMemo(() => {
+    const docNotifications = requestedDocs.map((doc) => ({
+      id: `doc-req-${doc._id || doc.id}`,
+      title: doc.status === "requested" ? "📨 HR Document Requested" : "✕ Document Rejected",
+      desc: `${doc.documentType || doc.documentName || "Document"}: ${doc.requestNote || doc.verificationNotes || "Upload requested by HR."}`,
+      time: "Action Needed",
+      link: "/employee/documents",
+    }));
 
-  const notifications = [
-    ...docNotifications,
-    {
-      id: 1,
-      title: "Payroll Statement Verified",
-      desc: "September salary calculation finalized and available for download.",
-      time: "10m ago",
-      link: "/employee/payroll",
-    },
-    {
-      id: 2,
-      title: "Leave Request Approved",
-      desc: "Upcoming leave has been recorded in the attendance calendar.",
-      time: "2h ago",
-      link: "/employee/leaves",
-    },
-  ];
+    return [
+      ...docNotifications,
+      {
+        id: "sys-1",
+        title: "Payroll Statement Verified",
+        desc: "September salary calculation finalized and available for download.",
+        time: "10m ago",
+        link: "/employee/payroll",
+      },
+      {
+        id: "sys-2",
+        title: "Leave Request Approved",
+        desc: "Upcoming leave has been recorded in the attendance calendar.",
+        time: "2h ago",
+        link: "/employee/leaves",
+      },
+    ];
+  }, [requestedDocs]);
+
+  const notifications = useMemo(() => {
+    return rawNotifications.filter(
+      (item) => !clearedNotificationIds.includes(String(item.id))
+    );
+  }, [rawNotifications, clearedNotificationIds]);
+
+  const handleClearAll = (e) => {
+    e.stopPropagation();
+    const allIds = rawNotifications.map((item) => String(item.id));
+    const newCleared = Array.from(new Set([...clearedNotificationIds, ...allIds]));
+    setClearedNotificationIds(newCleared);
+    try {
+      localStorage.setItem("hrms_cleared_notifications", JSON.stringify(newCleared));
+    } catch {}
+  };
+
+  const handleClearItem = (e, item) => {
+    e.stopPropagation();
+    const itemIdStr = String(item.id);
+    const newCleared = Array.from(new Set([...clearedNotificationIds, itemIdStr]));
+    setClearedNotificationIds(newCleared);
+    try {
+      localStorage.setItem("hrms_cleared_notifications", JSON.stringify(newCleared));
+    } catch {}
+  };
+
+  const handleNotificationClick = (item) => {
+    setShowNotifications(false);
+    if (item.link) {
+      navigate(item.link);
+    }
+  };
 
   return (
     <header className="employee-header" aria-label="Top Application Header">
@@ -293,7 +341,9 @@ function EmployeeHeader() {
             aria-label="Toggle notifications"
           >
             🔔
-            <span className="header-badge-count">{notifications.length}</span>
+            {notifications.length > 0 && (
+              <span className="header-badge-count">{notifications.length}</span>
+            )}
           </button>
 
           {showNotifications && (
@@ -305,21 +355,64 @@ function EmployeeHeader() {
               <div className="notification-dropdown">
                 <div className="notification-header">
                   <span>System Notifications</span>
-                  <span style={{ color: "#0d9488", cursor: "pointer", fontSize: "0.72rem" }}>
-                    Clear All
-                  </span>
+                  {notifications.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={handleClearAll}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        color: "#0d9488",
+                        cursor: "pointer",
+                        fontSize: "0.72rem",
+                        fontWeight: "600",
+                        padding: "2px 6px",
+                        borderRadius: "4px"
+                      }}
+                    >
+                      Clear All
+                    </button>
+                  )}
                 </div>
-                <ul className="notification-list">
-                  {notifications.map((item) => (
-                    <li key={item.id} className="notification-item">
-                      <strong>{item.title}</strong>
-                      <span>{item.desc}</span>
-                      <small style={{ color: "#94a3b8", fontSize: "0.68rem" }}>
-                        {item.time}
-                      </small>
-                    </li>
-                  ))}
-                </ul>
+                {notifications.length > 0 ? (
+                  <ul className="notification-list">
+                    {notifications.map((item) => (
+                      <li
+                        key={item.id}
+                        className="notification-item"
+                        onClick={() => handleNotificationClick(item)}
+                      >
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", width: "100%", gap: "8px" }}>
+                          <strong>{item.title}</strong>
+                          <button
+                            type="button"
+                            onClick={(e) => handleClearItem(e, item)}
+                            title="Dismiss notification"
+                            style={{
+                              background: "none",
+                              border: "none",
+                              color: "#94a3b8",
+                              cursor: "pointer",
+                              fontSize: "1rem",
+                              lineHeight: 1,
+                              padding: "0 2px"
+                            }}
+                          >
+                            ×
+                          </button>
+                        </div>
+                        <span>{item.desc}</span>
+                        <small style={{ color: "#94a3b8", fontSize: "0.68rem" }}>
+                          {item.time}
+                        </small>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <div style={{ padding: "1.5rem 1rem", textAlign: "center", color: "#64748b", fontSize: "0.82rem" }}>
+                    🔔 No new notifications
+                  </div>
+                )}
               </div>
             </>
           )}

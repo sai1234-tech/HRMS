@@ -7,9 +7,9 @@ const { authorizeRoles } = require("../middleware/role.middleware");
 // Protect all routes
 router.use(protect);
 
-// Employee routes
-router.post("/", authorizeRoles("employee", "hr", "admin"), performanceController.createOkr);
-router.get("/my", authorizeRoles("employee", "hr", "admin"), performanceController.getMyOkrs);
+// Employee / Self-Service routes (all roles)
+router.post("/", authorizeRoles("employee", "manager", "hr", "admin"), performanceController.createOkr);
+router.get("/my", authorizeRoles("employee", "manager", "hr", "admin"), performanceController.getMyOkrs);
 
 // HR/Manager routes
 router.get("/all", authorizeRoles("hr", "manager", "admin"), performanceController.getAllOkrs);

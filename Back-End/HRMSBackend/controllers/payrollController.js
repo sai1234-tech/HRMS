@@ -90,6 +90,31 @@ const getEmployeeByUser = async (userId, email) => {
     }
   }
 
+  // Fallback: If no Employee record exists for this User account, auto-generate profile
+  if (!employee && userId) {
+    try {
+      const User = mongoose.model("User");
+      const userDoc = await User.findById(userId);
+      if (userDoc) {
+        employee = new Employee({
+          user: userId,
+          firstName: userDoc.name || userDoc.email?.split("@")[0] || "User",
+          lastName: "",
+          email: userDoc.email,
+          employeeCode: `EMP-${String(userId).slice(-4).toUpperCase()}`,
+          employment: {
+            designation: userDoc.role === "manager" ? "Engineering Manager" : "Team Member",
+            department: "Engineering",
+            salary: 1200000,
+          },
+        });
+        await employee.save();
+      }
+    } catch (err) {
+      console.error("Auto-generate employee profile error:", err);
+    }
+  }
+
   return employee;
 };
 

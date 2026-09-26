@@ -1,6 +1,8 @@
 const Employee = require("../models/Employee");
 const User = require("../models/User");
 const Department = require("../models/Department");
+const bcrypt = require("bcrypt");
+
 
 
 // =====================================================
@@ -91,13 +93,32 @@ const createMultipleEmployees = async (
           .toUpperCase();
 
       // ========================================
-      // FIND USER
+      // FIND OR CREATE USER
       // ========================================
 
-      const user =
+      let user =
         await User.findOne({
           email,
         });
+
+      if ((employee.grantLogin || employee.loginPassword) && !user) {
+        const passToHash = (employee.loginPassword && employee.loginPassword.trim()) || "Password@123";
+        const hashedPassword = await bcrypt.hash(passToHash, 10);
+        user = await User.create({
+          name: `${employee.firstName.trim()} ${employee.lastName ? employee.lastName.trim() : ""}`.trim(),
+          email,
+          password: hashedPassword,
+          role: employee.loginRole || "employee",
+          isActive: true,
+        });
+      } else if (user && (employee.loginRole || employee.loginPassword)) {
+        if (employee.loginRole) user.role = employee.loginRole;
+        if (employee.loginPassword && employee.loginPassword.trim()) {
+          user.password = await bcrypt.hash(employee.loginPassword.trim(), 10);
+        }
+        await user.save();
+      }
+
 
       // ========================================
       // CHECK EXISTING EMPLOYEE
@@ -447,7 +468,7 @@ const updateEmployee = async (req, res) => {
     }
 
     // ---------------------------------------------
-    // Email
+    // Email & User Account Provisioning
     // ---------------------------------------------
 
     if (req.body.email !== undefined) {
@@ -457,7 +478,6 @@ const updateEmployee = async (req, res) => {
 
       employee.email = email;
 
-      // Try to find corresponding User
       const user = await User.findOne({
         email,
       });
@@ -466,6 +486,43 @@ const updateEmployee = async (req, res) => {
         employee.user = user._id;
       }
     }
+
+    // Portal Login Access Provisioning (Grant / Update Password / Role)
+    if (req.body.grantLogin || req.body.loginPassword || req.body.loginRole) {
+      let user = null;
+      if (employee.user) {
+        user = await User.findById(employee.user);
+      }
+      if (!user && employee.email) {
+        user = await User.findOne({ email: employee.email.toLowerCase() });
+      }
+
+      const roleToSet = req.body.loginRole || (user ? user.role : "employee");
+      const nameToSet = `${employee.firstName || ""} ${employee.lastName || ""}`.trim();
+
+      if (user) {
+        if (nameToSet) user.name = nameToSet;
+        user.email = employee.email.toLowerCase();
+        user.role = roleToSet;
+        if (req.body.loginPassword && req.body.loginPassword.trim()) {
+          user.password = await bcrypt.hash(req.body.loginPassword.trim(), 10);
+        }
+        await user.save();
+        employee.user = user._id;
+      } else if (req.body.grantLogin || (req.body.loginPassword && req.body.loginPassword.trim())) {
+        const passToHash = (req.body.loginPassword && req.body.loginPassword.trim()) || "Password@123";
+        const hashedPassword = await bcrypt.hash(passToHash, 10);
+        const newUser = await User.create({
+          name: nameToSet || "Employee",
+          email: employee.email.toLowerCase(),
+          password: hashedPassword,
+          role: roleToSet,
+          isActive: true,
+        });
+        employee.user = newUser._id;
+      }
+    }
+
 
     // ---------------------------------------------
     // Personal
@@ -608,14 +665,48 @@ const deleteEmployee = async (req, res) => {
 
 const getMyProfile = async (req, res) => {
   try {
-    const userId = req.user.userId;
+    const userId = req.user.userId || req.user.id || req.user._id;
 
-    const employee = await Employee.findOne({
+    let employee = await Employee.findOne({
       user: userId,
     }).populate(
       "user",
       "name email role isActive"
     );
+
+    if (!employee && req.user?.email) {
+      employee = await Employee.findOne({
+        email: req.user.email.toLowerCase(),
+      }).populate(
+        "user",
+        "name email role isActive"
+      );
+      if (employee && !employee.user) {
+        employee.user = userId;
+        await employee.save();
+      }
+    }
+
+    if (!employee) {
+      const user = await User.findById(userId);
+      if (user) {
+        const generatedCode = "EMP" + Date.now().toString().slice(-4);
+        employee = await Employee.create({
+          user: user._id,
+          employeeCode: generatedCode,
+          firstName: user.name?.split(" ")[0] || "Employee",
+          lastName: user.name?.split(" ").slice(1).join(" ") || "",
+          email: user.email,
+          employment: {
+            department: "Engineering",
+            designation: "Software Engineer",
+            joiningDate: new Date(),
+            employmentType: "Full Time",
+            status: "Active"
+          }
+        });
+      }
+    }
 
     if (!employee) {
       return res.status(404).json({

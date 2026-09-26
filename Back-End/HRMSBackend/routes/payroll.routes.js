@@ -14,25 +14,27 @@ const {
 const authMiddleware = require("../middleware/auth.middleware");
 const { authorizeRoles } = require("../middleware/role.middleware");
 
+const ALL_ROLES = ["employee", "manager", "hr", "admin"];
+
 // Employee payroll self-service
 router.get(
   "/my/salary",
   authMiddleware,
-  authorizeRoles("employee","hr"),
+  authorizeRoles(...ALL_ROLES),
   viewMySalary
 );
 // My payslip
 router.get(
   "/my/payslip",
   authMiddleware,
-  authorizeRoles("employee","hr"),
+  authorizeRoles(...ALL_ROLES),
   getMyPayslip
 );
 // Download my payslip
 router.get(
   "/my/payslip/download",
   authMiddleware,
-  authorizeRoles("employee","hr"),
+  authorizeRoles(...ALL_ROLES),
   downloadMyPayslip
 );
 

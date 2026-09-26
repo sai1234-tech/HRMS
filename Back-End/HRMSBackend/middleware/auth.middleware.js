@@ -87,7 +87,11 @@ const authMiddleware = (
     // STORE AUTHENTICATED USER
     // ========================================
 
-    req.user = decoded;
+    req.user = {
+      ...decoded,
+      id: decoded.userId || decoded.id,
+      userId: decoded.userId || decoded.id,
+    };
 
     next();
 

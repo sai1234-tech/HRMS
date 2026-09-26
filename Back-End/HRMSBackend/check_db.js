@@ -1,22 +1,41 @@
-const mongoose = require('mongoose');
+require("dotenv").config();
+const mongoose = require("mongoose");
+const connectDB = require("./config/db");
+const LeaveType = require("./models/LeaveType");
+const Leave = require("./models/Leave");
+const Employee = require("./models/Employee");
+const User = require("./models/User");
+const Timesheet = require("./models/Timesheet");
 
-mongoose.connect('mongodb://localhost:27017/HRMS').then(async () => {
-  const User = require('./models/User');
-  const Employee = require('./models/Employee');
-  
-  const employees = await Employee.find({ $or: [{ user: null }, { user: { $exists: false } }] });
-  console.log('Employees missing user link:', employees.length);
-  
-  if (employees.length > 0) {
-    console.log('Samples:');
-    for (const e of employees.slice(0, 5)) {
-      console.log(`- ${e.email}`);
-    }
-  }
+async function check() {
+  await connectDB();
 
-  // Also check if employee@hrms.com exists in employees
-  const employeeDemo = await Employee.findOne({ email: 'employee@hrms.com' });
-  console.log('employee@hrms.com in Employees collection?', !!employeeDemo);
+  console.log("=== USERS COUNT ===");
+  const userCount = await User.countDocuments();
+  console.log("User count:", userCount);
+
+  console.log("=== EMPLOYEES COUNT ===");
+  const empCount = await Employee.countDocuments();
+  console.log("Employee count:", empCount);
+
+  console.log("=== LEAVES ===");
+  const leaves = await Leave.find({}).populate("employee", "firstName lastName email user").populate("leaveType", "name code");
+  console.log(`Found ${leaves.length} leaves in DB:`);
+  leaves.forEach((l, idx) => {
+    console.log(`${idx + 1}. ID: ${l._id} | Emp: ${l.employee?.firstName} ${l.employee?.lastName} (${l.employee?.email}) [empId: ${l.employee?._id}] | Type: ${l.leaveType?.name} | Status: "${l.status}"`);
+  });
+
+  console.log("\n=== TIMESHEETS ===");
+  const timesheets = await Timesheet.find({}).populate("employee", "firstName lastName email");
+  console.log(`Found ${timesheets.length} timesheets in DB:`);
+  timesheets.forEach((ts, idx) => {
+    console.log(`${idx + 1}. ID: ${ts._id} | Emp: ${ts.employee?.firstName} ${ts.employee?.lastName} | Status: "${ts.status}"`);
+  });
 
   process.exit(0);
+}
+
+check().catch((err) => {
+  console.error(err);
+  process.exit(1);
 });

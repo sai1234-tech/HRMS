@@ -27,11 +27,13 @@ const {
 // EMPLOYEE
 // =====================================================
 
+const ALL_ROLES = ["employee", "manager", "hr", "admin"];
+
 // Create timesheet
 router.post(
   "/",
   authMiddleware,
-  authorizeRoles("employee"),
+  authorizeRoles(...ALL_ROLES),
   createTimesheet
 );
 
@@ -39,15 +41,16 @@ router.post(
 router.post(
   "/bulk",
   authMiddleware,
-  authorizeRoles("employee"),
+  authorizeRoles(...ALL_ROLES),
   createBulkTimesheets
 );
 
 // My timesheets
+router.get("/my-timesheets", authMiddleware, authorizeRoles(...ALL_ROLES), getMyTimesheets);
 router.get(
   "/my",
   authMiddleware,
-  authorizeRoles("employee"),
+  authorizeRoles(...ALL_ROLES),
   getMyTimesheets
 );
 
@@ -55,7 +58,7 @@ router.get(
 router.get(
   "/my/week",
   authMiddleware,
-  authorizeRoles("employee"),
+  authorizeRoles(...ALL_ROLES),
   getMyWeek
 );
 
@@ -63,7 +66,7 @@ router.get(
 router.get(
   "/my/summary",
   authMiddleware,
-  authorizeRoles("employee"),
+  authorizeRoles(...ALL_ROLES),
   getMySummary
 );
 
@@ -71,7 +74,7 @@ router.get(
 router.put(
   "/:timesheetId",
   authMiddleware,
-  authorizeRoles("employee"),
+  authorizeRoles(...ALL_ROLES),
   updateTimesheet
 );
 
@@ -79,7 +82,7 @@ router.put(
 router.delete(
   "/:timesheetId",
   authMiddleware,
-  authorizeRoles("employee"),
+  authorizeRoles(...ALL_ROLES),
   deleteTimesheet
 );
 
@@ -87,7 +90,7 @@ router.delete(
 router.patch(
   "/:timesheetId/submit",
   authMiddleware,
-  authorizeRoles("employee"),
+  authorizeRoles(...ALL_ROLES),
   submitTimesheet
 );
 
@@ -95,7 +98,7 @@ router.patch(
 router.post(
   "/submit-week",
   authMiddleware,
-  authorizeRoles("employee"),
+  authorizeRoles(...ALL_ROLES),
   submitWeek
 );
 
@@ -107,7 +110,7 @@ router.post(
 router.get(
   "/all",
   authMiddleware,
-  authorizeRoles("hr", "admin"),
+  authorizeRoles("hr", "manager", "admin"),
   getAllTimesheets
 );
 

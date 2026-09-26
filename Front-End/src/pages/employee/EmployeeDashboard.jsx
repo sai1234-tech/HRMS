@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import EmployeeHeader from "../../components/employee/EmployeeHeader";
+import DailyPulseWidget from "../../components/employee/DailyPulseWidget";
 import Loader from "../../components/common/Loader";
 import ErrorMessage from "../../components/common/ErrorMessage";
 import { useAuth } from "../../context/AuthContext";
@@ -11,6 +12,7 @@ import { useTimesheets } from "../../hooks/useTimesheets";
 import { useEnterpriseOps } from "../../hooks/useEnterpriseOps";
 import { getMyDocuments, uploadDocument } from "../../services/documentService";
 import { formatTime, formatDate } from "../../utils/date";
+import { normalizeRole } from "../../utils/auth";
 import "./EmployeeDashboard.css";
 
 function formatDuration(totalSeconds) {
@@ -231,7 +233,7 @@ function EmployeeDashboard() {
     return <Loader label="Loading your workspace..." />;
   }
 
-  if (employeeState.error) {
+  if (employeeState.error && !profile?.email && !sessionEmployee?.email && !user?.email) {
     return (
       <ErrorMessage
         message={employeeState.error}
@@ -242,43 +244,6 @@ function EmployeeDashboard() {
 
   return (
     <>
-      {/* Amazon-style Daily Pulse Tracker Overlay */}
-      {!pulseAnswered && (
-        <div className="modal-overlay" style={{ zIndex: 9999 }}>
-          <div className="onboard-modal" style={{ maxWidth: "500px", textAlign: "center" }}>
-            <h2 style={{ fontSize: "1.5rem", marginBottom: "0.5rem" }}>Daily Pulse Check</h2>
-            <p style={{ color: "#64748b", marginBottom: "1.5rem" }}>Please answer this question before accessing your workspace.</p>
-            
-            <div style={{ background: "#f8fafc", padding: "1.5rem", borderRadius: "12px", border: "1px solid #e2e8f0", marginBottom: "2rem" }}>
-              <h3 style={{ fontSize: "1.1rem", color: "#0f172a", marginBottom: "1rem" }}>"Do you feel your current workload is manageable?"</h3>
-              <div style={{ display: "flex", gap: "0.5rem", justifyContent: "center" }}>
-                {[1, 2, 3, 4, 5].map(score => (
-                  <button
-                    key={score}
-                    onClick={() => submitPulse(score)}
-                    style={{
-                      width: "40px", height: "40px", borderRadius: "50%", border: "1px solid #cbd5e1",
-                      background: "white", cursor: "pointer", fontWeight: "bold", fontSize: "1.1rem",
-                      transition: "all 0.2s"
-                    }}
-                    onMouseOver={(e) => { e.currentTarget.style.background = "#3b82f6"; e.currentTarget.style.color = "white"; e.currentTarget.style.borderColor = "#3b82f6"; }}
-                    onMouseOut={(e) => { e.currentTarget.style.background = "white"; e.currentTarget.style.color = "initial"; e.currentTarget.style.borderColor = "#cbd5e1"; }}
-                  >
-                    {score}
-                  </button>
-                ))}
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.75rem", color: "#94a3b8", marginTop: "0.5rem", padding: "0 10px" }}>
-                <span>Strongly Disagree</span>
-                <span>Strongly Agree</span>
-              </div>
-            </div>
-            
-            <p style={{ fontSize: "0.8rem", color: "#94a3b8", margin: 0 }}>Your responses are anonymized and aggregated for HR analytics.</p>
-          </div>
-        </div>
-      )}
-
       <EmployeeHeader />
 
       <main className="hr-dashboard-next">
@@ -379,6 +344,11 @@ function EmployeeDashboard() {
         ))}
 
         {/* =====================================================
+            DAILY PULSE WELLBEING CHECKLIST & POPUP MODAL
+        ===================================================== */}
+        <DailyPulseWidget />
+
+        {/* =====================================================
             HERO COMMAND BANNER
         ===================================================== */}
         <section className="emp-hero-banner" aria-label="Employee welcome banner">
@@ -458,6 +428,11 @@ function EmployeeDashboard() {
 
           <div className="emp-hero-actions">
             <div className="hero-buttons-row">
+              {["manager", "admin"].includes(normalizeRole(user)) && (
+                <Link to="/manager/dashboard" className="emp-action-btn primary" style={{ background: "#0f172a", color: "#ffffff", borderColor: "#1e293b" }}>
+                  <span>👥</span> Manager Workspace
+                </Link>
+              )}
               <Link to="/employee/leaves" className="emp-action-btn secondary">
                 <span>🌴</span> Apply Leave
               </Link>
@@ -571,10 +546,27 @@ function EmployeeDashboard() {
           <div className="punch-console-left">
             <div className="punch-status-line">
               <span
-                className={`punch-state-badge ${checkedIn ? "active" : shiftCompleted ? "completed" : "idle"
-                  }`}
+                className={`punch-state-badge ${
+                  checkedIn
+                    ? "active"
+                    : shiftCompleted
+                    ? "completed"
+                    : today?.liveStatus === "Absent" ||
+                      today?.status === "absent" ||
+                      (new Date().getHours() >= 17 && !checkedIn && !shiftCompleted)
+                    ? "absent"
+                    : "idle"
+                }`}
               >
-                {checkedIn ? "● Workday Active" : shiftCompleted ? "✓ Workday Completed" : "○ Not Checked In"}
+                {checkedIn
+                  ? "● Workday Active"
+                  : shiftCompleted
+                  ? "✓ Workday Completed"
+                  : today?.liveStatus === "Absent" ||
+                    today?.status === "absent" ||
+                    (new Date().getHours() >= 17 && !checkedIn && !shiftCompleted)
+                  ? "✖ Absent"
+                  : "○ Not Checked In"}
               </span>
               <span className="location-marker-text">
                 📍 5A1 Melange Towers, Madhapur, Hyderabad
@@ -645,7 +637,11 @@ function EmployeeDashboard() {
             <div className="shift-detail-item">
               <span>Break Duration</span>
               <strong>
-                {today?.checkIn ? `${today.breakDuration || 45} mins (Lunch break deducted)` : "0 mins / N/A"}
+                {today?.checkOut
+                  ? `${today?.breakDuration || 45} mins (Lunch break deducted)`
+                  : checkedIn || today?.checkIn
+                  ? "0 mins (Calculated at Clock Out)"
+                  : "0 mins / N/A"}
               </strong>
             </div>
             <div className="shift-detail-item">
@@ -697,7 +693,7 @@ function EmployeeDashboard() {
         ===================================================== */}
         <div className="dashboard-dual-layout">
           {/* Left Column: Recent Punch Activity & Company Holidays */}
-          <div>
+          <div className="dash-layout-col">
             {/* Recent Punch Activity */}
             <div className="dash-panel-card">
               <div className="dash-panel-head">
@@ -707,7 +703,7 @@ function EmployeeDashboard() {
                 </Link>
               </div>
 
-              <div className="table-responsive-wrapper">
+              <div className="table-responsive-wrapper recent-attendance-scroll">
                 <table className="recent-punch-table">
                   <thead>
                     <tr>
@@ -719,53 +715,61 @@ function EmployeeDashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {displayPunches.map((item) => {
-                      const isWeekend =
-                        String(item.status).toLowerCase().includes("off") ||
-                        String(item.status).toLowerCase().includes("weekend");
-                      return (
-                        <tr
-                          key={item.id || item.date}
-                          style={
-                            isWeekend
-                              ? { opacity: 0.78, background: "rgba(241, 245, 249, 0.45)" }
-                              : {}
-                          }
-                        >
-                          <td>
-                            <strong style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
-                              {item.dayName && (
-                                <span style={{ color: isWeekend ? "#94a3b8" : "#64748b", fontWeight: 600 }}>
-                                  {item.dayName},
-                                </span>
-                              )}
-                              <span>{formatDate(item.date)}</span>
-                            </strong>
-                          </td>
-                          <td>{item.checkIn ? formatTime(item.checkIn) : "-"}</td>
-                          <td>
-                            {item.checkOut
-                              ? formatTime(item.checkOut)
-                              : item.workingHours === "In Progress"
-                                ? "Active"
-                                : "-"}
-                          </td>
-                          <td>{item.workingHours || "-"}</td>
-                          <td>
-                            <span
-                              className={`status-chip-badge ${isWeekend
-                                  ? "off"
-                                  : String(item.status).toLowerCase() === "late"
-                                    ? "late"
-                                    : "present"
-                                }`}
-                            >
-                              {item.status || "Present"}
-                            </span>
-                          </td>
-                        </tr>
-                      );
-                    })}
+                    {displayPunches.length > 0 ? (
+                      displayPunches.map((item) => {
+                        const isWeekend =
+                          String(item.status).toLowerCase().includes("off") ||
+                          String(item.status).toLowerCase().includes("weekend");
+                        return (
+                          <tr
+                            key={item.id || item.date}
+                            style={
+                              isWeekend
+                                ? { opacity: 0.78, background: "rgba(241, 245, 249, 0.45)" }
+                                : {}
+                            }
+                          >
+                            <td>
+                              <strong style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                                {item.dayName && (
+                                  <span style={{ color: isWeekend ? "#94a3b8" : "#64748b", fontWeight: 600 }}>
+                                    {item.dayName},
+                                  </span>
+                                )}
+                                <span>{formatDate(item.date)}</span>
+                              </strong>
+                            </td>
+                            <td>{item.checkIn ? formatTime(item.checkIn) : "-"}</td>
+                            <td>
+                              {item.checkOut
+                                ? formatTime(item.checkOut)
+                                : item.workingHours === "In Progress"
+                                  ? "Active"
+                                  : "-"}
+                            </td>
+                            <td>{item.workingHours || "-"}</td>
+                            <td>
+                              <span
+                                className={`status-chip-badge ${isWeekend
+                                    ? "off"
+                                    : String(item.status).toLowerCase() === "late"
+                                      ? "late"
+                                      : "present"
+                                  }`}
+                              >
+                                {item.status || "Present"}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    ) : (
+                      <tr>
+                        <td colSpan="5" style={{ textAlign: "center", padding: "1.5rem", color: "#64748b" }}>
+                          No recent attendance records found.
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -780,7 +784,7 @@ function EmployeeDashboard() {
                 </span>
               </div>
 
-              <div style={{ maxHeight: "320px", overflowY: "auto", paddingRight: "0.25rem" }}>
+              <div className="holidays-scroll-container">
                 {upcomingHolidays.map((holiday) => (
                   <div key={holiday.name} className="holiday-item-row">
                     <div className="holiday-meta">
@@ -801,7 +805,7 @@ function EmployeeDashboard() {
           </div>
 
           {/* Right Column: Leave Balances, Recent Leaves & Announcements */}
-          <div>
+          <div className="dash-layout-col">
             {/* Leave Balances Breakdown */}
             <div className="dash-panel-card">
               <div className="dash-panel-head">
@@ -811,21 +815,30 @@ function EmployeeDashboard() {
                 </Link>
               </div>
 
-              <div>
+              <div className="leave-balances-scroll">
                 {leavesState.balance?.length > 0 ? (
                   leavesState.balance.map((b) => {
                     const available = b.available ?? 0;
                     const total = b.annualAllocation ?? 0;
                     const pct = total ? Math.min(100, Math.round((available / total) * 100)) : 0;
+                    const typeName = String(b.leaveType?.name || "").toLowerCase();
+                    const fillClass = typeName.includes("sick")
+                      ? "sick"
+                      : typeName.includes("casual")
+                        ? "casual"
+                        : typeName.includes("comp")
+                          ? "comp"
+                          : "earned";
+
                     return (
                       <div key={b.leaveType?._id || b.leaveType?.name} className="leave-type-row">
                         <div className="leave-type-head">
-                          <span>{b.leaveType?.name || "Leave"}</span>
+                          <span title={b.leaveType?.name || "Leave"}>{b.leaveType?.name || "Leave"}</span>
                           <strong>{available} / {total} Days</strong>
                         </div>
                         <div className="leave-mini-rail">
                           <div
-                            className="leave-mini-fill earned"
+                            className={`leave-mini-fill ${fillClass}`}
                             style={{ width: `${pct}%` }}
                           />
                         </div>
@@ -849,33 +862,40 @@ function EmployeeDashboard() {
                 </Link>
               </div>
 
-              <div>
+              <div className="recent-leaves-scroll">
                 {displayLeaves.length > 0 ? (
-                  displayLeaves.map((leave, idx) => (
-                    <div
-                      key={leave.id || leave._id || idx}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        padding: "0.65rem 0",
-                        borderBottom: "1px solid #f1f5f9",
-                        fontSize: "0.84rem",
-                      }}
-                    >
-                      <div>
-                        <strong style={{ display: "block", color: "#0f172a" }}>
-                          {leave.leaveType?.name || leave.type || "Leave Request"}
-                        </strong>
-                        <span style={{ fontSize: "0.74rem", color: "#64748b" }}>
-                          {formatDate(leave.startDate)}
+                  displayLeaves.map((leave, idx) => {
+                    const statusStr = String(leave.status || "Pending").toLowerCase();
+                    const statusClass = statusStr.includes("approv")
+                      ? "approved"
+                      : statusStr.includes("reject")
+                        ? "rejected"
+                        : statusStr.includes("cancel")
+                          ? "cancelled"
+                          : "pending";
+
+                    return (
+                      <div
+                        key={leave.id || leave._id || idx}
+                        className="recent-leave-item"
+                      >
+                        <div className="leave-item-info">
+                          <strong className="leave-item-type">
+                            {leave.leaveType?.name || leave.type || "Leave Request"}
+                          </strong>
+                          <span className="leave-item-date">
+                            {formatDate(leave.startDate)}
+                            {leave.endDate && leave.endDate !== leave.startDate
+                              ? ` - ${formatDate(leave.endDate)}`
+                              : ""}
+                          </span>
+                        </div>
+                        <span className={`status-chip-badge ${statusClass}`}>
+                          {leave.status || "Pending"}
                         </span>
                       </div>
-                      <span className="status-chip-badge present">
-                        {leave.status || "Pending"}
-                      </span>
-                    </div>
-                  ))
+                    );
+                  })
                 ) : (
                   <p style={{ fontSize: "0.84rem", color: "#64748b", margin: "0.5rem 0" }}>
                     No recent leave requests found.
@@ -893,14 +913,16 @@ function EmployeeDashboard() {
                 </span>
               </div>
 
-              <div className="bulletin-box">
-                <strong>📢 All-Hands Townhall</strong>
-                Join leadership for the Q3 Enterprise Roadmap discussion this Friday at 4:00 PM IST via Teams.
-              </div>
+              <div className="bulletin-scroll-container">
+                <div className="bulletin-box">
+                  <strong>📢 All-Hands Townhall</strong>
+                  Join leadership for the Q3 Enterprise Roadmap discussion this Friday at 4:00 PM IST via Teams.
+                </div>
 
-              <div className="bulletin-box" style={{ marginTop: "0.85rem" }}>
-                <strong>🛡️ Health Insurance Cards</strong>
-                Updated digital health cards for FY 2026 are now available under the Documents tab.
+                <div className="bulletin-box">
+                  <strong>🛡️ Health Insurance Cards</strong>
+                  Updated digital health cards for FY 2026 are now available under the Documents tab.
+                </div>
               </div>
             </div>
           </div>

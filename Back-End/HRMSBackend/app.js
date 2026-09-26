@@ -151,6 +151,7 @@ app.get("/health", (req, res) => {
 
 const managerRoutes = require("./routes/manager.routes");
 const performanceRoutes = require("./routes/performance.routes");
+const pulseRoutes = require("./routes/pulse.routes");
 
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/employees", employeeRoutes);
@@ -164,6 +165,7 @@ app.use("/api/v1/documents", documentRoutes);
 app.use("/api/v1/manager", managerRoutes);
 app.use("/api/v1/performance", performanceRoutes);
 app.use("/api/v1/tickets", ticketRoutes);
+app.use("/api/v1/pulse", pulseRoutes);
 
 app.use(errorHandler);
 

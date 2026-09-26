@@ -1,5 +1,6 @@
 import { Outlet } from "react-router-dom";
 import AppSidebar from "./AppSidebar";
+import AppFooter from "./AppFooter";
 import CommandPalette from "../common/CommandPalette";
 import { useSidebar } from "../../context/SidebarContext";
 import "./DashboardLayout.css";
@@ -12,6 +13,7 @@ function DashboardLayout() {
       <AppSidebar />
       <div className="hrms-main-viewport">
         <Outlet />
+        <AppFooter />
       </div>
       <CommandPalette />
     </div>

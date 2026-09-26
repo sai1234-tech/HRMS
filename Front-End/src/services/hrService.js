@@ -59,33 +59,40 @@ export async function getLeaveTypes() {
 export async function approveLeave(leaveId) {
   try {
     const res = await apiRequest(`/leaves/${leaveId}/approve`, {
-      method: "PUT"
+      method: "PATCH"
     });
     return res;
   } catch (err) {
-    throw err;
+    return await apiRequest(`/leaves/${leaveId}/approve`, {
+      method: "PUT"
+    });
   }
 }
 
 export async function rejectLeave(leaveId, rejectionReason) {
   try {
     const res = await apiRequest(`/leaves/${leaveId}/reject`, {
-      method: "PUT",
+      method: "PATCH",
       body: JSON.stringify({ rejectionReason })
     });
     return res;
   } catch (err) {
-    throw err;
+    return await apiRequest(`/leaves/${leaveId}/reject`, {
+      method: "PUT",
+      body: JSON.stringify({ rejectionReason })
+    });
   }
 }
 
 export async function revertLeave(leaveId) {
   try {
     const res = await apiRequest(`/leaves/${leaveId}/revert`, {
-      method: "PUT"
+      method: "PATCH"
     });
     return res;
   } catch (err) {
-    throw err;
+    return await apiRequest(`/leaves/${leaveId}/revert`, {
+      method: "PUT"
+    });
   }
 }

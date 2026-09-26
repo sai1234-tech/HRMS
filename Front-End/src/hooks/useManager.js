@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { apiRequest } from "../services/apiClient";
+import { useSyncRefresh } from "../utils/syncManager";
 
 export const useManager = () => {
   const [overview, setOverview] = useState(null);
@@ -45,8 +46,8 @@ export const useManager = () => {
     }
   }, []);
 
-  const loadAll = useCallback(async () => {
-    setLoading(true);
+  const loadAll = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     setError(null);
     try {
       await Promise.all([
@@ -56,9 +57,9 @@ export const useManager = () => {
         fetchProjects(),
       ]);
     } catch (err) {
-      setError("Failed to load manager data");
+      if (!silent) setError("Failed to load manager data");
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [fetchOverview, fetchLeaves, fetchTimesheets, fetchProjects]);
 
@@ -66,12 +67,17 @@ export const useManager = () => {
     loadAll();
   }, [loadAll]);
 
+  // Real-time live sync: refresh on mutations, cross-tab events, window focus & 5s background interval
+  useSyncRefresh(loadAll, { interval: 5000, silent: true });
+
   const approveLeave = async (id, remarks) => {
     try {
-      const res = await apiRequest(`/manager/team-leaves/${id}`, { method: "PUT", body: JSON.stringify({ status: "approved", remarks }) });
+      const res = await apiRequest(`/manager/team-leaves/${id}`, {
+        method: "PUT",
+        body: JSON.stringify({ status: "approved", remarks }),
+      });
       if (res.success) {
-        await fetchLeaves();
-        await fetchOverview();
+        await loadAll(true);
         return true;
       }
     } catch (err) {
@@ -82,10 +88,12 @@ export const useManager = () => {
 
   const rejectLeave = async (id, remarks) => {
     try {
-      const res = await apiRequest(`/manager/team-leaves/${id}`, { method: "PUT", body: JSON.stringify({ status: "rejected", remarks }) });
+      const res = await apiRequest(`/manager/team-leaves/${id}`, {
+        method: "PUT",
+        body: JSON.stringify({ status: "rejected", remarks }),
+      });
       if (res.success) {
-        await fetchLeaves();
-        await fetchOverview();
+        await loadAll(true);
         return true;
       }
     } catch (err) {
@@ -96,10 +104,12 @@ export const useManager = () => {
 
   const approveTimesheet = async (id, comment) => {
     try {
-      const res = await apiRequest(`/manager/team-timesheets/${id}`, { method: "PUT", body: JSON.stringify({ status: "approved", reviewComment: comment }) });
+      const res = await apiRequest(`/manager/team-timesheets/${id}`, {
+        method: "PUT",
+        body: JSON.stringify({ status: "approved", reviewComment: comment }),
+      });
       if (res.success) {
-        await fetchTimesheets();
-        await fetchOverview();
+        await loadAll(true);
         return true;
       }
     } catch (err) {
@@ -110,10 +120,12 @@ export const useManager = () => {
 
   const rejectTimesheet = async (id, comment) => {
     try {
-      const res = await apiRequest(`/manager/team-timesheets/${id}`, { method: "PUT", body: JSON.stringify({ status: "rejected", reviewComment: comment }) });
+      const res = await apiRequest(`/manager/team-timesheets/${id}`, {
+        method: "PUT",
+        body: JSON.stringify({ status: "rejected", reviewComment: comment }),
+      });
       if (res.success) {
-        await fetchTimesheets();
-        await fetchOverview();
+        await loadAll(true);
         return true;
       }
     } catch (err) {

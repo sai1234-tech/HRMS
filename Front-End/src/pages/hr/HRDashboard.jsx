@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import EmployeeHeader from "../../components/employee/EmployeeHeader";
 import LeaveManagement from "../../components/hr/LeaveManagement";
 import MonthlyAttendanceReport from "../../components/hr/MonthlyAttendanceReport";
+import EmployeeEngagementAnalytics from "../../components/hr/EmployeeEngagementAnalytics";
 import Loader from "../../components/common/Loader";
 import {
   getAllAttendance,
@@ -315,6 +316,13 @@ function HRDashboard() {
             </div>
             <small className="kpi-meta">1-click navigation to all operations</small>
           </div>
+        </section>
+
+        {/* =====================================================
+            EMPLOYEE ENGAGEMENT & DAILY PULSE ANALYTICS
+        ===================================================== */}
+        <section style={{ marginTop: "24px" }}>
+          <EmployeeEngagementAnalytics />
         </section>
 
         {/* Department Analytics Visualization Map */}

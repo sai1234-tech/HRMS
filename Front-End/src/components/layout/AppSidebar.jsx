@@ -67,13 +67,17 @@ function AppSidebar() {
     profile.jobTitle ||
     (isHr ? "HR Lead" : isAdmin ? "Administrator" : "Full-Stack Engineer");
 
-  const homeRoute = isHr
+  const homeRoute = role === "manager"
+    ? "/manager/dashboard"
+    : isHr
     ? "/hr/dashboard"
     : isAdmin
     ? "/admin/dashboard"
     : "/employee/dashboard";
 
-  const portalBadge = isHr
+  const portalBadge = role === "manager"
+    ? "Manager Workspace"
+    : isHr
     ? "HR Portal"
     : isAdmin
     ? "Executive Admin"
@@ -144,7 +148,7 @@ function AppSidebar() {
             <>
               <div className="sidebar-nav-group">
                 {!isCollapsed && <span className="sidebar-group-label">WORKSPACE</span>}
-                <NavLink to="/employee/dashboard" end className="sidebar-nav-link" title="Overview Dashboard">
+                <NavLink to={homeRoute} end className="sidebar-nav-link" title="Overview Dashboard">
                   <span className="nav-item-icon">📊</span>
                   {!isCollapsed && <span className="nav-item-label">Overview</span>}
                 </NavLink>
@@ -205,17 +209,21 @@ function AppSidebar() {
           {isManager && (
             <div className="sidebar-nav-group">
               {!isCollapsed && <span className="sidebar-group-label">MANAGER WORKSPACE</span>}
-              <NavLink to="/manager/dashboard" end className="sidebar-nav-link" title="Team Approvals & Overview">
+              <NavLink to="/manager/dashboard" end className="sidebar-nav-link" title="Team Approvals & Command Center">
                 <span className="nav-item-icon">👥</span>
-                {!isCollapsed && <span className="nav-item-label">Team Approvals</span>}
+                {!isCollapsed && <span className="nav-item-label">Team Overview & Approvals</span>}
               </NavLink>
               <NavLink to="/manager/projects" end className="sidebar-nav-link" title="Realtime Active Projects">
                 <span className="nav-item-icon">🚀</span>
                 {!isCollapsed && <span className="nav-item-label">Realtime Projects</span>}
               </NavLink>
-              <NavLink to="/hr/performance" end className="sidebar-nav-link" title="Appraisals & Performance">
-                <span className="nav-item-icon">🎯</span>
-                {!isCollapsed && <span className="nav-item-label">Appraisals</span>}
+              <NavLink to="/employee/payroll" end className="sidebar-nav-link" title="Salary & Payslips">
+                <span className="nav-item-icon">💰</span>
+                {!isCollapsed && <span className="nav-item-label">My Payroll</span>}
+              </NavLink>
+              <NavLink to="/employee/dashboard" end className="sidebar-nav-link" title="My Personal Self-Service Dashboard">
+                <span className="nav-item-icon">👤</span>
+                {!isCollapsed && <span className="nav-item-label">My Personal Dashboard</span>}
               </NavLink>
             </div>
           )}
@@ -268,6 +276,10 @@ function AppSidebar() {
                 <NavLink to="/hr/timesheets" end className="sidebar-nav-link" title="Timesheet Approvals">
                   <span className="nav-item-icon">⏱️</span>
                   {!isCollapsed && <span className="nav-item-label">Timesheets</span>}
+                </NavLink>
+                <NavLink to="/hr/leaves" end className="sidebar-nav-link" title="Leave Management">
+                  <span className="nav-item-icon">🌴</span>
+                  {!isCollapsed && <span className="nav-item-label">Leave Management</span>}
                 </NavLink>
                 <NavLink to="/hr/performance" end className="sidebar-nav-link" title="Appraisals & Performance">
                   <span className="nav-item-icon">🎯</span>
@@ -329,6 +341,10 @@ function AppSidebar() {
                 <NavLink to="/hr/timesheets" end className="sidebar-nav-link" title="Timesheet Approvals">
                   <span className="nav-item-icon">⏱️</span>
                   {!isCollapsed && <span className="nav-item-label">Timesheets</span>}
+                </NavLink>
+                <NavLink to="/hr/leaves" end className="sidebar-nav-link" title="Leave Management">
+                  <span className="nav-item-icon">🌴</span>
+                  {!isCollapsed && <span className="nav-item-label">Leave Management</span>}
                 </NavLink>
                 <NavLink to="/hr/documents" end className="sidebar-nav-link" title="Compliance Vault">
                   <span className="nav-item-icon">📂</span>

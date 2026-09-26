@@ -12,9 +12,23 @@ export function useEmployee() {
     setError("");
     try {
       const response = await getEmployee();
-      setEmployee(response.employee || response);
+      if (response && (response.employee || response.data)) {
+        setEmployee(response.employee || response.data);
+      } else {
+        const storedUser = sessionStorage.getItem("hrms_user")
+          ? JSON.parse(sessionStorage.getItem("hrms_user"))
+          : null;
+        setEmployee(storedUser);
+      }
     } catch (requestError) {
-      if (!silent) setError(requestError.message);
+      const storedUser = sessionStorage.getItem("hrms_user")
+        ? JSON.parse(sessionStorage.getItem("hrms_user"))
+        : null;
+      if (storedUser) {
+        setEmployee(storedUser);
+      } else if (!silent) {
+        setError(requestError.message);
+      }
     } finally {
       if (!silent) setLoading(false);
     }

@@ -51,6 +51,9 @@ const emptyForm = {
   dateOfExit: "",
   employmentType: "Full Time",
   status: "Active",
+  grantLogin: false,
+  loginRole: "employee",
+  loginPassword: "",
 };
 
 // Synthesized fallback employees if database is empty
@@ -317,6 +320,9 @@ function EmployeeManagement() {
       lastName: form.lastName.trim(),
       email: form.email.trim().toLowerCase(),
       phone: form.phone.trim(),
+      grantLogin: form.grantLogin,
+      loginRole: form.loginRole,
+      loginPassword: form.loginPassword ? form.loginPassword.trim() : undefined,
       employment: {
         department: form.department.trim(),
         designation: form.designation.trim(),
@@ -363,6 +369,9 @@ function EmployeeManagement() {
         : "",
       employmentType: employee.employment?.employmentType || "Full Time",
       status: employee.employment?.status || "Active",
+      grantLogin: !!employee.user,
+      loginRole: employee.user?.role || "employee",
+      loginPassword: "",
     });
 
     const formEl = document.getElementById("employee-form-card");
@@ -807,6 +816,60 @@ function EmployeeManagement() {
                 )}
               </div>
 
+              {/* Portal Login Access Section */}
+              <div className="emp-login-access-block" style={{ marginTop: "1.25rem", padding: "1rem", borderRadius: "10px", background: "rgba(99, 102, 241, 0.05)", border: "1px solid rgba(99, 102, 241, 0.2)" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.5rem" }}>
+                  <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontWeight: "600", cursor: "pointer", color: "#4f46e5", fontSize: "0.9rem" }}>
+                    <input
+                      type="checkbox"
+                      name="grantLogin"
+                      checked={form.grantLogin}
+                      onChange={(e) => setForm((prev) => ({ ...prev, grantLogin: e.target.checked }))}
+                      style={{ width: "16px", height: "16px", accentColor: "#4f46e5" }}
+                    />
+                    🔑 Grant / Manage Portal Login Access
+                  </label>
+                  {editingId && (
+                    <span style={{ fontSize: "0.75rem", padding: "0.2rem 0.5rem", borderRadius: "12px", background: form.grantLogin ? "#dcfce7" : "#fee2e2", color: form.grantLogin ? "#15803d" : "#b91c1c", fontWeight: 600 }}>
+                      {form.grantLogin ? "Portal Active" : "No Login Linked"}
+                    </span>
+                  )}
+                </div>
+
+                {form.grantLogin && (
+                  <div className="emp-form-grid" style={{ marginTop: "0.75rem" }}>
+                    <div className="emp-input-field">
+                      <label htmlFor="form-login-role">System Role *</label>
+                      <select
+                        id="form-login-role"
+                        name="loginRole"
+                        value={form.loginRole}
+                        onChange={setField}
+                      >
+                        <option value="employee">Employee</option>
+                        <option value="manager">Manager</option>
+                        <option value="hr">HR</option>
+                        <option value="admin">Admin</option>
+                      </select>
+                    </div>
+
+                    <div className="emp-input-field">
+                      <label htmlFor="form-login-password">
+                        {editingId ? "Reset Password (Optional)" : "Set Password *"}
+                      </label>
+                      <input
+                        id="form-login-password"
+                        name="loginPassword"
+                        type="password"
+                        value={form.loginPassword}
+                        onChange={setField}
+                        placeholder={editingId ? "Leave blank to keep current" : "e.g. Password@123"}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <div className="form-submit-row">
                 <button
                   type="submit"
@@ -978,6 +1041,15 @@ function EmployeeManagement() {
                               <div className="emp-meta-block">
                                 <strong className="emp-primary-name">{name}</strong>
                                 <span className="emp-sub-email">{employee.email}</span>
+                                {employee.user ? (
+                                  <span className="emp-login-badge" style={{ fontSize: "0.7rem", color: "#16a34a", display: "inline-flex", alignItems: "center", gap: "3px", fontWeight: "600", marginTop: "2px" }}>
+                                    🔑 {employee.user.role ? employee.user.role.toUpperCase() : "LOGIN ENABLED"}
+                                  </span>
+                                ) : (
+                                  <span className="emp-login-badge" style={{ fontSize: "0.7rem", color: "#94a3b8", display: "inline-flex", alignItems: "center", gap: "3px", marginTop: "2px" }}>
+                                    ⚠️ No Login Account
+                                  </span>
+                                )}
                               </div>
                             </div>
                           </td>

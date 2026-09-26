@@ -179,7 +179,15 @@ function EmployeeAttendance() {
             <div className="punch-single-metric">
               <span>Today's Status</span>
               <strong className={isCheckedIn ? "active" : ""}>
-                {isCheckedIn ? "● Checked In" : todayAttendance?.checkOut ? "✓ Shift Completed" : "○ Not Checked In"}
+                {isCheckedIn
+                  ? "● Checked In"
+                  : todayAttendance?.checkOut
+                  ? "✓ Shift Completed"
+                  : todayAttendance?.liveStatus === "Absent" ||
+                    todayAttendance?.status === "absent" ||
+                    (new Date().getHours() >= 17 && !todayAttendance?.checkIn)
+                  ? "✖ Absent"
+                  : "○ Not Checked In"}
               </strong>
             </div>
 
@@ -321,7 +329,7 @@ function EmployeeAttendance() {
                         </span>
                       </td>
                       <td style={{ color: "#64748b" }}>
-                        {rec.checkIn ? `${rec.breakDuration || 45} mins` : "0 mins"}
+                        {rec.checkOut ? `${rec.breakDuration || 45} mins` : rec.checkIn ? "0 mins (In progress)" : "0 mins"}
                       </td>
                       <td>
                         <span

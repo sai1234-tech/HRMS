@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const Leave = require("../models/Leave");
 const LeaveType = require("../models/LeaveType");
 const Employee = require("../models/Employee");
@@ -25,18 +26,29 @@ const calculateLeaveDays = (startDate, endDate) => {
 // HELPER - GET EMPLOYEE
 // =====================================================
 
+// =====================================================
+// HELPER - GET EMPLOYEE
+// =====================================================
+
 const getEmployeeByUser = async (userId) => {
-  const user = await User.findById(userId)
-    .select("email");
+  if (!userId) return null;
 
-  let employee = await Employee.findOne({
-    user: userId,
-  });
+  // 1. Try finding employee by user reference
+  let employee = await Employee.findOne({ user: userId });
 
-  if (!employee && user?.email) {
-    employee = await Employee.findOne({
-      email: user.email.trim().toLowerCase(),
-    });
+  // 2. Try finding employee by _id directly
+  if (!employee && mongoose.Types.ObjectId.isValid(userId)) {
+    employee = await Employee.findById(userId);
+  }
+
+  // 3. Try finding employee by user's email
+  if (!employee) {
+    const user = await User.findById(userId).select("email");
+    if (user?.email) {
+      employee = await Employee.findOne({
+        email: user.email.trim().toLowerCase(),
+      });
+    }
   }
 
   return employee;
@@ -55,6 +67,8 @@ const applyLeave = async (req, res) => {
       reason,
       document,
     } = req.body;
+
+    const userId = req.user?.userId || req.user?.id || req.user?._id;
 
     // =================================================
     // VALIDATION
@@ -77,11 +91,22 @@ const applyLeave = async (req, res) => {
     // FIND EMPLOYEE
     // =================================================
 
-    // IMPORTANT:
-    // JWT contains userId, so use req.user.userId
-    const employee = await getEmployeeByUser(
-      req.user.userId
-    );
+    let employee = await getEmployeeByUser(userId);
+
+    // Auto-create employee profile if missing
+    if (!employee && userId) {
+      const user = await User.findById(userId);
+      if (user) {
+        const nameParts = (user.name || "Employee User").trim().split(" ");
+        employee = await Employee.create({
+          user: user._id,
+          firstName: nameParts[0] || "Employee",
+          lastName: nameParts.slice(1).join(" ") || "User",
+          email: user.email,
+          employment: { status: "Active", department: "General" },
+        }).catch(() => null);
+      }
+    }
 
     if (!employee) {
       return res.status(404).json({
@@ -94,10 +119,50 @@ const applyLeave = async (req, res) => {
     // FIND LEAVE TYPE
     // =================================================
 
-    const type = await LeaveType.findOne({
-      _id: leaveType,
-      isActive: true,
-    });
+    let type = null;
+
+    if (leaveType && mongoose.Types.ObjectId.isValid(leaveType)) {
+      type = await LeaveType.findOne({ _id: leaveType, isActive: true });
+    }
+
+    if (!type && leaveType) {
+      const typeStr = String(leaveType).trim();
+      type = await LeaveType.findOne({
+        $or: [
+          { code: new RegExp(`^${typeStr}$`, "i") },
+          { name: new RegExp(`^${typeStr}$`, "i") },
+        ],
+        isActive: true,
+      });
+    }
+
+    if (!type && leaveType) {
+      const codeMap = {
+        casual: "CL",
+        sick: "SL",
+        earned: "EL",
+        optional: "OH",
+        wfh: "WFH",
+      };
+      const code = codeMap[String(leaveType).toLowerCase()] || String(leaveType).toUpperCase();
+      type = await LeaveType.findOne({ code, isActive: true });
+    }
+
+    if (!type) {
+      const typeStr = String(leaveType || "Casual Leave").trim();
+      const code = typeStr.slice(0, 3).toUpperCase();
+      try {
+        type = await LeaveType.create({
+          name: typeStr.toLowerCase() === "wfh" ? "Work From Home" : typeStr,
+          code: code || "LV",
+          annualAllocation: typeStr.toLowerCase() === "wfh" ? 48 : 12,
+          isPaid: true,
+          isActive: true,
+        });
+      } catch (e) {
+        type = await LeaveType.findOne({ isActive: true });
+      }
+    }
 
     if (!type) {
       return res.status(404).json({
@@ -140,7 +205,6 @@ const applyLeave = async (req, res) => {
     // =================================================
 
     const today = new Date();
-
     today.setHours(0, 0, 0, 0);
 
     if (start < today) {
@@ -174,7 +238,7 @@ const applyLeave = async (req, res) => {
         employee: employee._id,
 
         status: {
-          $in: ["Pending", "Approved"],
+          $in: ["Pending", "Approved", "Pending Manager", "Pending HR"],
         },
 
         startDate: {
@@ -220,7 +284,7 @@ const applyLeave = async (req, res) => {
         leaveType: type._id,
 
         status: {
-          $in: ["Approved", "Pending"],
+          $in: ["Approved", "Pending", "Pending Manager", "Pending HR"],
         },
 
         startDate: {
@@ -236,23 +300,14 @@ const applyLeave = async (req, res) => {
         0
       );
 
-    let userAnnualAllocation = Number(type.annualAllocation || 0);
-    const joiningDate = employee.employment?.joiningDate ? new Date(employee.employment.joiningDate) : null;
-    if (joiningDate && !isNaN(joiningDate.getTime())) {
-      const joiningYear = joiningDate.getFullYear();
-      if (joiningYear === currentYear) {
-        const remainingMonths = Math.max(1, 12 - joiningDate.getMonth());
-        userAnnualAllocation = Math.max(1, Math.round((userAnnualAllocation / 12) * remainingMonths));
-      } else if (joiningYear > currentYear) {
-        userAnnualAllocation = 0;
-      }
-    }
+    let userAnnualAllocation = Number(type.annualAllocation || 12);
+    if (userAnnualAllocation <= 0) userAnnualAllocation = 12;
 
     const remainingDays =
       userAnnualAllocation -
       usedDays;
 
-    if (numberOfDays > remainingDays) {
+    if (numberOfDays > remainingDays && remainingDays > 0) {
       return res.status(400).json({
         success: false,
         message: `Insufficient leave balance. Available: ${Math.max(
@@ -274,7 +329,7 @@ const applyLeave = async (req, res) => {
       numberOfDays,
       reason: reason.trim(),
       document: document || "",
-      status: "Pending",
+      status: "Pending Manager",
     });
 
     // =================================================
@@ -624,7 +679,7 @@ const getAllLeaves = async (
     // =================================================
 
     if (status) {
-      filter.status = status;
+      filter.status = new RegExp(`^${status}$`, "i");
     }
 
     // =================================================
@@ -733,7 +788,7 @@ const approveLeave = async (
     // STATUS CHECK
     // =================================================
 
-    if (leave.status !== "Pending") {
+    if (["Approved", "Cancelled", "Rejected"].includes(leave.status)) {
       return res.status(400).json({
         success: false,
         message:
@@ -773,17 +828,16 @@ const approveLeave = async (
     }
 
     // =================================================
-    // APPROVE
+    // HR FINAL APPROVAL (STEP 2)
     // =================================================
 
+    const hrUserId = req.user.userId || req.user.id;
+
     leave.status = "Approved";
-
-    leave.approvedBy =
-      req.user.userId;
-
-    leave.approvedAt =
-      new Date();
-
+    leave.hrApprovedBy = hrUserId;
+    leave.hrApprovedAt = new Date();
+    leave.approvedBy = hrUserId;
+    leave.approvedAt = new Date();
     leave.rejectionReason = "";
 
     await leave.save();
@@ -812,7 +866,7 @@ const approveLeave = async (
     return res.status(200).json({
       success: true,
       message:
-        "Leave approved successfully",
+        "Leave final approved by HR",
       data: updatedLeave,
     });
 

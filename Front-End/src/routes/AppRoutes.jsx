@@ -30,6 +30,7 @@ import ResourceAllocation from "../pages/hr/ResourceAllocation";
 import ShiftRoster from "../pages/hr/ShiftRoster";
 import Helpdesk from "../pages/hr/Helpdesk";
 import HRPerformance from "../pages/hr/HRPerformance";
+import HRLeaveManagement from "../pages/hr/HRLeaveManagement";
 import AccountManagement from "../pages/admin/AccountManagement";
 import AdminDashboard from "../pages/admin/AdminDashboard";
 import OrganizationHierarchy from "../pages/organization/OrganizationHierarchy";
@@ -66,6 +67,8 @@ function ProtectedRoute({ children, roles = [] }) {
 
   return children;
 }
+
+const ALL_ROLES = ["employee", "manager", "hr", "admin"];
 
 function AppRoutes() {
   return (
@@ -109,244 +112,263 @@ function AppRoutes() {
         }
       >
         {/* =========================
-            EMPLOYEE ROUTES
+            EMPLOYEE & SELF-SERVICE ROUTES (All Roles)
         ========================== */}
 
         <Route
           path="/employee/dashboard"
           element={
-            <ProtectedRoute roles={["employee"]}>
+            <ProtectedRoute roles={ALL_ROLES}>
               <EmployeeDashboard />
             </ProtectedRoute>
           }
         />
 
-      <Route
-        path="/employee/attendance"
-        element={
-          <ProtectedRoute roles={["employee"]}>
-            <EmployeeAttendance />
-          </ProtectedRoute>
-        }
-      />
+        <Route
+          path="/employee/attendance"
+          element={
+            <ProtectedRoute roles={ALL_ROLES}>
+              <EmployeeAttendance />
+            </ProtectedRoute>
+          }
+        />
 
-      <Route
-        path="/employee/leaves"
-        element={
-          <ProtectedRoute roles={["employee"]}>
-            <EmployeeLeaves />
-          </ProtectedRoute>
-        }
-      />
+        <Route
+          path="/employee/leaves"
+          element={
+            <ProtectedRoute roles={ALL_ROLES}>
+              <EmployeeLeaves />
+            </ProtectedRoute>
+          }
+        />
 
-      <Route
-        path="/employee/timesheets"
-        element={
-          <ProtectedRoute roles={["employee"]}>
-            <EmployeeTimesheets />
-          </ProtectedRoute>
-        }
-      />
+        <Route
+          path="/employee/timesheets"
+          element={
+            <ProtectedRoute roles={ALL_ROLES}>
+              <EmployeeTimesheets />
+            </ProtectedRoute>
+          }
+        />
 
-      <Route
-        path="/employee/performance"
-        element={
-          <ProtectedRoute roles={["employee", "hr", "admin"]}>
-            <Performance />
-          </ProtectedRoute>
-        }
-      />
+        <Route
+          path="/employee/performance"
+          element={
+            <ProtectedRoute roles={ALL_ROLES}>
+              <Performance />
+            </ProtectedRoute>
+          }
+        />
 
-      <Route
-        path="/employee/profile"
-        element={
-          <ProtectedRoute roles={["employee", "hr", "admin"]}>
-            <EmployeeProfile />
-          </ProtectedRoute>
-        }
-      />
+        <Route
+          path="/employee/profile"
+          element={
+            <ProtectedRoute roles={ALL_ROLES}>
+              <EmployeeProfile />
+            </ProtectedRoute>
+          }
+        />
 
-      <Route
-        path="/profile"
-        element={
-          <ProtectedRoute roles={["employee", "hr", "admin"]}>
-            <EmployeeProfile />
-          </ProtectedRoute>
-        }
-      />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute roles={ALL_ROLES}>
+              <EmployeeProfile />
+            </ProtectedRoute>
+          }
+        />
 
-      <Route
-        path="/employee/payroll"
-        element={
-          <ProtectedRoute roles={["employee", "hr"]}>
-            <EmployeePayroll />
-          </ProtectedRoute>
-        }
-      />
+        <Route
+          path="/employee/payroll"
+          element={
+            <ProtectedRoute roles={ALL_ROLES}>
+              <EmployeePayroll />
+            </ProtectedRoute>
+          }
+        />
 
-      <Route
-        path="/employee/documents"
-        element={
-          <ProtectedRoute roles={["employee", "hr", "admin"]}>
-            <EmployeeDocuments />
-          </ProtectedRoute>
-        }
-      />
+        <Route
+          path="/manager/payroll"
+          element={
+            <ProtectedRoute roles={ALL_ROLES}>
+              <EmployeePayroll />
+            </ProtectedRoute>
+          }
+        />
 
-      <Route
-        path="/documents"
-        element={
-          <ProtectedRoute roles={["employee", "hr", "admin"]}>
-            <EmployeeDocuments />
-          </ProtectedRoute>
-        }
-      />
+        <Route
+          path="/payroll"
+          element={
+            <ProtectedRoute roles={ALL_ROLES}>
+              <EmployeePayroll />
+            </ProtectedRoute>
+          }
+        />
 
+        <Route
+          path="/employee/documents"
+          element={
+            <ProtectedRoute roles={ALL_ROLES}>
+              <EmployeeDocuments />
+            </ProtectedRoute>
+          }
+        />
 
-      {/* =========================
-          MANAGER ROUTES
-      ========================== */}
-
-      <Route
-        path="/manager/dashboard"
-        element={
-          <ProtectedRoute roles={["manager", "admin"]}>
-            <ManagerDashboard />
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/manager/projects"
-        element={
-          <ProtectedRoute roles={["manager", "admin"]}>
-            <ManagerProjects />
-          </ProtectedRoute>
-        }
-      />
+        <Route
+          path="/documents"
+          element={
+            <ProtectedRoute roles={ALL_ROLES}>
+              <EmployeeDocuments />
+            </ProtectedRoute>
+          }
+        />
 
 
-      {/* =========================
-          ADMIN ROUTES
-      ========================== */}
+        {/* =========================
+            MANAGER ROUTES
+        ========================== */}
 
-      <Route
-        path="/admin/dashboard"
-        element={
-          <ProtectedRoute roles={["admin"]}>
-            <AdminDashboard />
-          </ProtectedRoute>
-        }
-      />
+        <Route
+          path="/manager/dashboard"
+          element={
+            <ProtectedRoute roles={["manager", "admin"]}>
+              <ManagerDashboard />
+            </ProtectedRoute>
+          }
+        />
 
-      <Route
-        path="/admin/accounts"
-        element={
-          <ProtectedRoute roles={["admin"]}>
-            <AccountManagement />
-          </ProtectedRoute>
-        }
-      />
+        <Route
+          path="/manager/projects"
+          element={
+            <ProtectedRoute roles={["manager", "admin"]}>
+              <ManagerProjects />
+            </ProtectedRoute>
+          }
+        />
 
 
-      {/* =========================
-          HR / ADMIN GOVERNANCE ROUTES
-      ========================== */}
+        {/* =========================
+            ADMIN ROUTES
+        ========================== */}
 
-      <Route
-        path="/hr/dashboard"
-        element={
-          <ProtectedRoute roles={["hr", "admin"]}>
-            <HRDashboard />
-          </ProtectedRoute>
-        }
-      />
+        <Route
+          path="/admin/dashboard"
+          element={
+            <ProtectedRoute roles={["admin"]}>
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
 
-      <Route
-        path="/hr/performance"
-        element={
-          <ProtectedRoute roles={["hr", "admin", "manager"]}>
-            <HRPerformance />
-          </ProtectedRoute>
-        }
-      />
+        <Route
+          path="/admin/accounts"
+          element={
+            <ProtectedRoute roles={["admin"]}>
+              <AccountManagement />
+            </ProtectedRoute>
+          }
+        />
 
-      <Route
-        path="/hr/departments"
-        element={
-          <ProtectedRoute roles={["hr", "admin"]}>
-            <DepartmentManagement />
-          </ProtectedRoute>
-        }
-      />
 
-      <Route
-        path="/hr/employees"
-        element={
-          <ProtectedRoute roles={["hr", "admin"]}>
-            <EmployeeManagement />
-          </ProtectedRoute>
-        }
-      />
+        {/* =========================
+            HR / ADMIN GOVERNANCE ROUTES
+        ========================== */}
 
-      <Route
-        path="/hr/timesheets"
-        element={
-          <ProtectedRoute roles={["hr", "admin"]}>
-            <TimesheetManagement />
-          </ProtectedRoute>
-        }
-      />
+        <Route
+          path="/hr/dashboard"
+          element={
+            <ProtectedRoute roles={["hr", "admin"]}>
+              <HRDashboard />
+            </ProtectedRoute>
+          }
+        />
 
-      <Route
-        path="/hr/recruitment"
-        element={
-          <ProtectedRoute roles={["hr", "admin"]}>
-            <RecruitmentOnboarding />
-          </ProtectedRoute>
-        }
-      />
+        <Route
+          path="/hr/performance"
+          element={
+            <ProtectedRoute roles={["hr", "admin", "manager"]}>
+              <HRPerformance />
+            </ProtectedRoute>
+          }
+        />
 
-      <Route
-        path="/hr/resources"
-        element={
-          <ProtectedRoute roles={["hr", "admin"]}>
-            <ResourceAllocation />
-          </ProtectedRoute>
-        }
-      />
+        <Route
+          path="/hr/departments"
+          element={
+            <ProtectedRoute roles={["hr", "admin"]}>
+              <DepartmentManagement />
+            </ProtectedRoute>
+          }
+        />
 
-      <Route
-        path="/hr/roster"
-        element={
-          <ProtectedRoute roles={["hr", "admin"]}>
-            <ShiftRoster />
-          </ProtectedRoute>
-        }
-      />
+        <Route
+          path="/hr/employees"
+          element={
+            <ProtectedRoute roles={["hr", "admin"]}>
+              <EmployeeManagement />
+            </ProtectedRoute>
+          }
+        />
 
-      <Route
-        path="/hr/payroll"
-        element={
-          <ProtectedRoute roles={["hr", "admin"]}>
-            <PayrollManagement />
-          </ProtectedRoute>
-        }
-      />
+        <Route
+          path="/hr/timesheets"
+          element={
+            <ProtectedRoute roles={["hr", "admin"]}>
+              <TimesheetManagement />
+            </ProtectedRoute>
+          }
+        />
 
-      <Route
-        path="/hr/helpdesk"
-        element={
-          <ProtectedRoute roles={["hr", "admin"]}>
-            <Helpdesk />
-          </ProtectedRoute>
-        }
-      />
+        <Route
+          path="/hr/recruitment"
+          element={
+            <ProtectedRoute roles={["hr", "admin"]}>
+              <RecruitmentOnboarding />
+            </ProtectedRoute>
+          }
+        />
 
-      <Route path="/hr/documents" element={<ProtectedRoute roles={["hr", "admin"]}><DocumentManagement /></ProtectedRoute>} />
-      <Route path="/hr/organization" element={<ProtectedRoute roles={["hr", "admin"]}><OrganizationHierarchy /></ProtectedRoute>} />
-      <Route path="/organization" element={<ProtectedRoute roles={["employee", "hr", "admin"]}><OrganizationHierarchy /></ProtectedRoute>} />
-      <Route path="/employee/organization" element={<ProtectedRoute roles={["employee", "hr", "admin"]}><OrganizationHierarchy /></ProtectedRoute>} />
+        <Route
+          path="/hr/resources"
+          element={
+            <ProtectedRoute roles={["hr", "admin"]}>
+              <ResourceAllocation />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/hr/roster"
+          element={
+            <ProtectedRoute roles={["hr", "admin"]}>
+              <ShiftRoster />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/hr/payroll"
+          element={
+            <ProtectedRoute roles={["hr", "admin", "manager"]}>
+              <PayrollManagement />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/hr/helpdesk"
+          element={
+            <ProtectedRoute roles={["hr", "admin"]}>
+              <Helpdesk />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route path="/hr/leaves" element={<ProtectedRoute roles={["hr", "admin"]}><HRLeaveManagement /></ProtectedRoute>} />
+        <Route path="/hr/documents" element={<ProtectedRoute roles={["hr", "admin"]}><DocumentManagement /></ProtectedRoute>} />
+        <Route path="/hr/organization" element={<ProtectedRoute roles={ALL_ROLES}><OrganizationHierarchy /></ProtectedRoute>} />
+        <Route path="/organization" element={<ProtectedRoute roles={ALL_ROLES}><OrganizationHierarchy /></ProtectedRoute>} />
+        <Route path="/employee/organization" element={<ProtectedRoute roles={ALL_ROLES}><OrganizationHierarchy /></ProtectedRoute>} />
       </Route>
 
       {/* =========================
@@ -356,9 +378,9 @@ function AppRoutes() {
       <Route
         path="/unauthorized"
         element={
-          <main style={{ padding: "30px" }}>
-            <h1>Access Denied</h1>
-            <p>
+          <main style={{ padding: "30px", textAlign: "center" }}>
+            <h1 style={{ color: "#e11d48" }}>Access Denied</h1>
+            <p style={{ color: "#64748b" }}>
               You do not have permission to access this page.
             </p>
           </main>

@@ -49,15 +49,19 @@ function LeaveManagement({ leaves = [], onChanged }) {
 
   const filteredLeaves = useMemo(() => {
     return leaves.filter((leave) => {
+      const currentStatus = String(leave.status || "").toLowerCase();
+      const targetStatus = statusFilter.toLowerCase();
       const statusMatches =
-        statusFilter === "all" || leave.status === statusFilter;
+        statusFilter === "all" || currentStatus === targetStatus;
+
       const typeId =
         leave.leaveType?._id || leave.leaveType?.id || leave.leaveType;
-      const typeMatches = typeFilter === "all" || typeId === typeFilter;
+      const typeMatches =
+        typeFilter === "all" || String(typeId) === String(typeFilter);
 
       const empName = `${leave.employee?.firstName || ""} ${
         leave.employee?.lastName || ""
-      } ${leave.employee?.name || ""}`.toLowerCase();
+      } ${leave.employee?.name || ""} ${leave.employee?.email || ""}`.toLowerCase();
       const reason = (leave.reason || "").toLowerCase();
       const query = searchTerm.trim().toLowerCase();
       const searchMatches =
@@ -70,27 +74,83 @@ function LeaveManagement({ leaves = [], onChanged }) {
   const history = useMemo(
     () =>
       filteredLeaves.filter((leave) =>
-        ["Approved", "Rejected", "Cancelled"].includes(leave.status)
+        ["approved", "rejected", "cancelled"].includes(
+          String(leave.status || "").toLowerCase()
+        )
       ),
     [filteredLeaves]
   );
 
+function ApprovalFlowBadge({ status }) {
+  const normStatus = String(status || "").toLowerCase();
+  
+  if (normStatus === "pending manager" || normStatus === "pending_manager" || normStatus === "pending") {
+    return (
+      <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "0.75rem", background: "#fef3c7", color: "#92400e", padding: "3px 10px", borderRadius: "12px", fontWeight: 600 }}>
+        <span>👤 Employee</span> ➔ <span style={{ textDecoration: "underline" }}>⌛ Manager Review</span> ➔ <span>🏢 HR Final</span>
+      </div>
+    );
+  }
+  
+  if (normStatus === "pending hr" || normStatus === "pending_hr") {
+    return (
+      <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "0.75rem", background: "#e0f2fe", color: "#0369a1", padding: "3px 10px", borderRadius: "12px", fontWeight: 600 }}>
+        <span>👤 Employee</span> ➔ <span>✓ Manager Approved</span> ➔ <span style={{ textDecoration: "underline" }}>⌛ HR Final Review</span>
+      </div>
+    );
+  }
+
+  if (normStatus === "approved") {
+    return (
+      <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "0.75rem", background: "#dcfce7", color: "#166534", padding: "3px 10px", borderRadius: "12px", fontWeight: 600 }}>
+        <span>👤 Employee</span> ➔ <span>✓ Manager</span> ➔ <span>✓ HR Approved</span> 🎉
+      </div>
+    );
+  }
+
+  if (normStatus === "rejected") {
+    return (
+      <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "0.75rem", background: "#fee2e2", color: "#991b1b", padding: "3px 10px", borderRadius: "12px", fontWeight: 600 }}>
+        <span>✕ Rejected</span>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "0.75rem", background: "#f1f5f9", color: "#475569", padding: "3px 10px", borderRadius: "12px", fontWeight: 600 }}>
+      <span>⌛ Pending Approval</span>
+    </div>
+  );
+}
+
   const pending = useMemo(
-    () => filteredLeaves.filter((leave) => leave.status === "Pending"),
+    () =>
+      filteredLeaves.filter((leave) =>
+        ["pending", "pending manager", "pending hr", "pending_manager", "pending_hr"].includes(
+          String(leave.status || "").toLowerCase()
+        )
+      ),
     [filteredLeaves]
   );
 
   const balance = useMemo(() => {
     return types.map((type) => {
       const used = leaves
-        .filter(
-          (leave) =>
-            leave.leaveType?._id === type._id && leave.status === "Approved"
-        )
+        .filter((leave) => {
+          const leaveTypeId =
+            leave.leaveType?._id || leave.leaveType?.id || leave.leaveType;
+          return (
+            String(leaveTypeId) === String(type._id) &&
+            String(leave.status || "").toLowerCase() === "approved"
+          );
+        })
         .reduce((total, leave) => total + Number(leave.numberOfDays || 0), 0);
       const allocation = Number(type.annualAllocation || 0);
       const available = Math.max(allocation - used, 0);
-      const pct = allocation > 0 ? Math.min(100, Math.round((used / allocation) * 100)) : 0;
+      const pct =
+        allocation > 0
+          ? Math.min(100, Math.round((used / allocation) * 100))
+          : 0;
       return {
         ...type,
         available,
@@ -245,9 +305,9 @@ function LeaveManagement({ leaves = [], onChanged }) {
         ) : (
           pending.map((leave) => {
             const isProcessing = processingId === leave._id;
-            const empName = `${leave.employee?.firstName || "Employee"} ${
+            const empName = `${leave.employee?.firstName || ""} ${
               leave.employee?.lastName || ""
-            }`.trim();
+            }`.trim() || leave.employee?.name || leave.employee?.email || "Employee";
             const initials = getInitials(
               leave.employee?.firstName,
               leave.employee?.lastName
@@ -264,11 +324,12 @@ function LeaveManagement({ leaves = [], onChanged }) {
                     {initials}
                   </div>
                   <div className="applicant-info">
-                    <div className="applicant-name-row">
+                    <div className="applicant-name-row" style={{ flexWrap: "wrap", gap: "8px", alignItems: "center" }}>
                       <strong className="applicant-name">{empName}</strong>
                       <span className="leave-badge">
                         {leave.leaveType?.name || "Leave"}
                       </span>
+                      <ApprovalFlowBadge status={leave.status} />
                       <span className="leave-dates-text">
                         📅 {formatDate(leave.startDate)} to{" "}
                         {formatDate(leave.endDate)} ({leave.numberOfDays || 1}{" "}
@@ -358,9 +419,9 @@ function LeaveManagement({ leaves = [], onChanged }) {
               </tr>
             ) : (
               history.map((leave) => {
-                const empName = `${leave.employee?.firstName || "Employee"} ${
+                const empName = `${leave.employee?.firstName || ""} ${
                   leave.employee?.lastName || ""
-                }`.trim();
+                }`.trim() || leave.employee?.name || leave.employee?.email || "Employee";
                 const status = String(leave.status).toLowerCase();
                 const canRevert = ["approved", "rejected"].includes(status);
                 const palette = getColorForString(empName);

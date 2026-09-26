@@ -12,8 +12,15 @@ function formatDuration(totalSeconds) {
 
 function AttendanceCard({ attendance, onClockIn, onClockOut }) {
   const checkedIn = Boolean(attendance?.checkIn) && !attendance?.checkOut;
-  const status = attendance?.status;
-  const displayStatus = attendance?.checkOut ? "Completed" : status || (checkedIn ? "Checked in" : "Not checked in");
+  const status = attendance?.liveStatus || attendance?.status;
+  const isWorkdayOver = new Date().getHours() >= 17;
+  const displayStatus = attendance?.checkOut
+    ? "Completed"
+    : checkedIn
+    ? "Checked in"
+    : status === "Absent" || status === "absent" || (isWorkdayOver && !attendance?.checkIn)
+    ? "Absent"
+    : "Not checked in";
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
   useEffect(() => {

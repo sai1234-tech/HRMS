@@ -65,7 +65,11 @@ function PayrollManagementContent() {
 
 function PayrollManagement() {
   const { user } = useAuth();
-  return normalizeRole(user) === "employee" ? <Navigate to="/employee/payroll" replace /> : <PayrollManagementContent />;
+  const role = normalizeRole(user);
+  if (role === "employee" || role === "manager") {
+    return <Navigate to="/employee/payroll" replace />;
+  }
+  return <PayrollManagementContent />;
 }
 
 export default PayrollManagement;

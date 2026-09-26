@@ -9,14 +9,17 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1.25rem;
+  gap: 1rem;
   height: 64px;
-  padding: 0 1.75rem;
+  padding: 0 1.5rem;
   background: rgba(255, 255, 255, 0.96);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border-bottom: 1px solid #e2e8f0;
   box-shadow: 0 2px 10px rgba(15, 23, 42, 0.03);
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
 }
 
 /* ==========================================================================
@@ -25,8 +28,9 @@
 .header-left-cluster {
   display: flex;
   align-items: center;
-  gap: 0.85rem;
-  min-width: fit-content;
+  gap: 0.75rem;
+  min-width: 0;
+  flex-shrink: 1;
 }
 
 .header-sidebar-toggle-btn {
@@ -76,29 +80,40 @@
 .header-breadcrumb-box {
   display: flex;
   align-items: center;
-  gap: 0.45rem;
+  gap: 0.4rem;
   line-height: 1;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .breadcrumb-section {
-  font-size: 0.78rem;
+  font-size: 0.76rem;
   font-weight: 700;
   color: #64748b;
   text-transform: uppercase;
   letter-spacing: 0.04em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
 }
 
 .breadcrumb-divider {
   font-size: 0.82rem;
   color: #cbd5e1;
+  flex-shrink: 0;
 }
 
 .breadcrumb-title {
   margin: 0;
-  font-size: 0.98rem;
+  font-size: 0.95rem;
   font-weight: 800;
   color: #0f172a;
   letter-spacing: -0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 220px;
 }
 
 /* ==========================================================================
@@ -106,9 +121,11 @@
    ========================================================================== */
 .header-center-cluster {
   flex: 1;
-  max-width: 520px;
+  max-width: 480px;
   display: flex;
   justify-content: center;
+  min-width: 0;
+  flex-shrink: 1;
 }
 
 /* ==========================================================================
@@ -117,8 +134,11 @@
 .employee-header-actions {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.65rem;
   position: relative;
+  flex-shrink: 0;
+  margin-left: auto;
+  white-space: nowrap;
 }
 
 .header-clock-capsule {

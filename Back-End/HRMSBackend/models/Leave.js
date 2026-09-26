@@ -110,11 +110,13 @@ const leaveSchema = new mongoose.Schema(
       type: String,
       enum: [
         "Pending",
+        "Pending Manager",
+        "Pending HR",
         "Approved",
         "Rejected",
         "Cancelled",
       ],
-      default: "Pending",
+      default: "Pending Manager",
       index: true,
     },
 
@@ -128,8 +130,46 @@ const leaveSchema = new mongoose.Schema(
     },
 
     // =====================================================
-    // APPROVAL
+    // MANAGER APPROVAL (STEP 1)
     // =====================================================
+
+    managerApprovedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+
+    managerApprovedAt: {
+      type: Date,
+      default: null,
+    },
+
+    managerRemarks: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    // =====================================================
+    // HR FINAL APPROVAL (STEP 2)
+    // =====================================================
+
+    hrApprovedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+
+    hrApprovedAt: {
+      type: Date,
+      default: null,
+    },
+
+    hrRemarks: {
+      type: String,
+      trim: true,
+      default: "",
+    },
 
     approvedBy: {
       type: mongoose.Schema.Types.ObjectId,

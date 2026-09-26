@@ -21,10 +21,12 @@ const {
 router.get("/types", listDocumentTypes);
 
 //Get employee documents
+router.get("/my-documents", authMiddleware, authorizeRoles("employee", "manager", "hr", "admin"), getMyDocuments);
+router.get("/me", authMiddleware, authorizeRoles("employee", "manager", "hr", "admin"), getMyDocuments);
 router.get(
   "/my",
   authMiddleware,
-  authorizeRoles("employee"),
+  authorizeRoles("employee", "manager", "hr", "admin"),
   getMyDocuments
 );
 
@@ -32,7 +34,7 @@ router.get(
 router.post(
   "/upload",
   authMiddleware,
-  authorizeRoles("employee", "hr", "admin"),
+  authorizeRoles("employee", "manager", "hr", "admin"),
   upload.single("document"),
   uploadEmployeeDocument
 );

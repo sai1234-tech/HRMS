@@ -215,11 +215,7 @@ function EmployeeLeaves() {
       };
 
       if (submitLeave) {
-        try {
-          await submitLeave(payload);
-        } catch {
-          // fallback
-        }
+        await submitLeave(payload);
       }
 
       const newLeave = {
@@ -284,11 +280,7 @@ function EmployeeLeaves() {
       };
 
       if (submitLeave) {
-        try {
-          await submitLeave(payload);
-        } catch {
-          // fallback
-        }
+        await submitLeave(payload);
       }
 
       const newWfh = {
@@ -1019,7 +1011,9 @@ function EmployeeLeaves() {
                     })
                     .map((item, idx) => {
                       const days = item.duration || calculateDays(item.startDate, item.endDate);
-                      const isPending = String(item.status || "").toLowerCase() === "pending";
+                      const isPending = ["pending", "pending manager", "pending hr", "pending_manager", "pending_hr"].includes(
+                        String(item.status || "").toLowerCase()
+                      );
 
                       return (
                         <tr key={item.id || item._id || idx}>
@@ -1053,17 +1047,42 @@ function EmployeeLeaves() {
                             {item.deliverables || item.reason || "Personal work"}
                           </td>
                           <td>
-                            <span
-                              className={`status-chip-badge ${
-                                String(item.status).toLowerCase() === "approved"
-                                  ? "present"
-                                  : String(item.status).toLowerCase() === "rejected"
-                                  ? "rose"
-                                  : "late"
-                              }`}
-                            >
-                              {item.status || "Pending"}
-                            </span>
+                            {(() => {
+                              const norm = String(item.status || "").toLowerCase();
+                              if (norm === "pending manager" || norm === "pending_manager" || norm === "pending") {
+                                return (
+                                  <span className="status-chip-badge late" title="Step 1 of 2: Awaiting Manager Approval">
+                                    🟡 Pending Manager (Step 1/2)
+                                  </span>
+                                );
+                              }
+                              if (norm === "pending hr" || norm === "pending_hr") {
+                                return (
+                                  <span className="status-chip-badge" style={{ background: "#e0f2fe", color: "#0369a1", border: "1px solid #bae6fd" }} title="Step 2 of 2: Manager Approved! Awaiting HR Final Approval">
+                                    🔵 Pending HR (Step 2/2)
+                                  </span>
+                                );
+                              }
+                              if (norm === "approved") {
+                                return (
+                                  <span className="status-chip-badge present" title="Leave Final Approved by HR">
+                                    🟢 Approved (Final)
+                                  </span>
+                                );
+                              }
+                              if (norm === "rejected") {
+                                return (
+                                  <span className="status-chip-badge rose" title="Leave Rejected">
+                                    🔴 Rejected
+                                  </span>
+                                );
+                              }
+                              return (
+                                <span className="status-chip-badge late">
+                                  {item.status || "Pending"}
+                                </span>
+                              );
+                            })()}
                           </td>
                           <td>
                             {isPending ? (

@@ -11,5 +11,6 @@ export function normalizeRole(user) {
   const role = String(rawRole).trim().toLowerCase();
   if (["admin", "administrator", "system admin"].includes(role)) return "admin";
   if (["hr", "human resources", "hr manager", "hr_manager", "hr-manager", "hr admin", "human resource manager", "people operations"].includes(role)) return "hr";
+  if (["manager", "team manager", "project manager", "lead", "team lead"].includes(role)) return "manager";
   return "employee";
 }

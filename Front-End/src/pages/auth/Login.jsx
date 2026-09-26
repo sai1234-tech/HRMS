@@ -26,6 +26,14 @@ const DEMO_ROLES = [
     password: "Password@123",
   },
   {
+    id: "manager",
+    label: "Team Manager",
+    badge: "Approvals & Projects",
+    icon: "👥",
+    email: "manager@hrms.com",
+    password: "Password@123",
+  },
+  {
     id: "employee",
     label: "Employee",
     badge: "Self-Service",
@@ -133,6 +141,8 @@ function Login() {
         navigate("/admin/dashboard");
       } else if (role === "hr") {
         navigate("/hr/dashboard");
+      } else if (role === "manager") {
+        navigate("/manager/dashboard");
       } else {
         navigate("/employee/dashboard");
       }
@@ -154,6 +164,7 @@ function Login() {
     const role = normalizeRole(user);
     if (role === "admin") return <Navigate to="/admin/dashboard" replace />;
     if (role === "hr") return <Navigate to="/hr/dashboard" replace />;
+    if (role === "manager") return <Navigate to="/manager/dashboard" replace />;
     return <Navigate to="/employee/dashboard" replace />;
   }
 

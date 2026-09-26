@@ -7,6 +7,8 @@ const {
   calculateWorkingHours,
   calculateLateMinutes,
   calculateOvertime,
+  isWorkdayEnded,
+  getLiveAttendanceStatus,
 } = require("../utils/attendanceUtils");
 
 
@@ -471,10 +473,21 @@ const getMyTodayAttendance =
 
 
       if (!attendance) {
-        return res.status(404).json({
-          success: false,
-          message:
-            "No attendance found for today",
+        const now = new Date();
+        const liveStatus = getLiveAttendanceStatus(null, now);
+        const status = liveStatus === "Absent" ? "absent" : "not_checked_in";
+
+        return res.status(200).json({
+          success: true,
+          message: liveStatus === "Not Checked In" ? "Employee has not checked in yet today" : "Workday ended without check-in",
+          data: {
+            employee: formatEmployee(employee),
+            attendance: null,
+            liveStatus,
+            status,
+            checkedIn: false,
+            checkOut: null,
+          },
         });
       }
 

@@ -26,19 +26,22 @@ const {
 // EMPLOYEE
 // =====================================================
 
+const ALL_ROLES = ["employee", "manager", "hr", "admin"];
+
 // Apply Leave
 router.post(
   "/apply",
   authMiddleware,
-  authorizeRoles("employee"),
+  authorizeRoles(...ALL_ROLES),
   applyLeave
 );
 
 // View My Leaves
+router.get("/my-leaves", authMiddleware, authorizeRoles(...ALL_ROLES), getMyLeaves);
 router.get(
   "/my",
   authMiddleware,
-  authorizeRoles("employee"),
+  authorizeRoles(...ALL_ROLES),
   getMyLeaves
 );
 
@@ -46,7 +49,7 @@ router.get(
 router.get(
   "/balance",
   authMiddleware,
-  authorizeRoles("employee"),
+  authorizeRoles(...ALL_ROLES),
   getLeaveBalance
 );
 
@@ -54,7 +57,7 @@ router.get(
 router.patch(
   "/:leaveId/cancel",
   authMiddleware,
-  authorizeRoles("employee"),
+  authorizeRoles(...ALL_ROLES),
   cancelLeave
 );
 
@@ -77,6 +80,12 @@ router.patch(
   authorizeRoles("hr", "admin"),
   approveLeave
 );
+router.put(
+  "/:leaveId/approve",
+  authMiddleware,
+  authorizeRoles("hr", "admin"),
+  approveLeave
+);
 
 // Reject Leave
 router.patch(
@@ -85,8 +94,21 @@ router.patch(
   authorizeRoles("hr", "admin"),
   rejectLeave
 );
+router.put(
+  "/:leaveId/reject",
+  authMiddleware,
+  authorizeRoles("hr", "admin"),
+  rejectLeave
+);
 
+// Revert Leave
 router.patch(
+  "/:leaveId/revert",
+  authMiddleware,
+  authorizeRoles("hr", "admin"),
+  revertLeaveDecision
+);
+router.put(
   "/:leaveId/revert",
   authMiddleware,
   authorizeRoles("hr", "admin"),
@@ -97,12 +119,14 @@ router.patch(
 // LEAVE TYPES
 // =====================================================
 
-// Employee + HR + Admin can view types
+// Employee + Manager + HR + Admin can view types
+router.get("/leave-types", authMiddleware, authorizeRoles("employee", "manager", "hr", "admin"), getLeaveTypes);
 router.get(
   "/types",
   authMiddleware,
   authorizeRoles(
     "employee",
+    "manager",
     "hr",
     "admin"
   ),
