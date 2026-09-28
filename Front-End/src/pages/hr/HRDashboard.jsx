@@ -313,6 +313,12 @@ function HRDashboard() {
               <Link to="/hr/departments" className="shortcut-chip">
                 <span>🏢</span> Teams
               </Link>
+              <Link to="/hr/resignations" className="shortcut-chip" style={{ background: '#fff1f2', color: '#be123c', borderColor: '#ffe4e6' }}>
+                <span>👋</span> Resignations
+              </Link>
+              <Link to="/hr/helpdesk" className="shortcut-chip" style={{ background: '#f0fdfa', color: '#0f766e', borderColor: '#ccfbf1' }}>
+                <span>🎧</span> HR Helpdesk
+              </Link>
             </div>
             <small className="kpi-meta">1-click navigation to all operations</small>
           </div>

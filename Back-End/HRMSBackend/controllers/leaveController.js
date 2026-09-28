@@ -12,14 +12,20 @@ const calculateLeaveDays = (startDate, endDate) => {
   const start = new Date(startDate);
   const end = new Date(endDate);
 
-  const difference =
-    end.getTime() - start.getTime();
+  if (isNaN(start.getTime()) || isNaN(end.getTime()) || end < start) return 0;
 
-  return (
-    Math.floor(
-      difference / (1000 * 60 * 60 * 24)
-    ) + 1
-  );
+  let current = new Date(start);
+  let workingDays = 0;
+
+  while (current <= end) {
+    const dayOfWeek = current.getDay();
+    if (dayOfWeek !== 0 && dayOfWeek !== 6) { // Exclude Sunday (0) and Saturday (6)
+      workingDays++;
+    }
+    current.setDate(current.getDate() + 1);
+  }
+
+  return workingDays;
 };
 
 // =====================================================
@@ -84,6 +90,15 @@ const applyLeave = async (req, res) => {
         success: false,
         message:
           "Leave type, start date, end date and reason are required",
+      });
+    }
+
+    const startDay = new Date(startDate).getDay();
+    const endDay = new Date(endDate).getDay();
+    if (startDay === 0 || startDay === 6 || endDay === 0 || endDay === 6) {
+      return res.status(400).json({
+        success: false,
+        message: "Saturdays and Sundays are non-working weekend days and cannot be selected as leave/WFH dates.",
       });
     }
 

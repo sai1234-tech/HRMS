@@ -173,7 +173,7 @@ const checkIn = async (req, res) => {
     const lateMinutes = calculateLateMinutes(
       currentTime,
       9,
-      0
+      30
     );
 
     const isLate = lateMinutes > 0;
@@ -1404,24 +1404,203 @@ const getMonthlySummary =
 
 
 // =====================================================
+// HR ACTION 1: CORRECT CLOCK-OUT TIME
+// PATCH /api/v1/attendance/:attendanceId/correct-clockout
+// =====================================================
+
+const correctClockOut = async (req, res) => {
+  try {
+    const { attendanceId } = req.params;
+    const { checkOut: newCheckOut, remarks } = req.body;
+
+    if (!newCheckOut) {
+      return res.status(400).json({
+        success: false,
+        message: "Corrected check-out timestamp is required",
+      });
+    }
+
+    const attendance = await Attendance.findById(attendanceId).populate("employee");
+    if (!attendance) {
+      return res.status(404).json({
+        success: false,
+        message: "Attendance record not found",
+      });
+    }
+
+    const checkOutTime = new Date(newCheckOut);
+    if (Number.isNaN(checkOutTime.getTime()) || checkOutTime <= new Date(attendance.checkIn)) {
+      return res.status(400).json({
+        success: false,
+        message: "Check-out time must be after check-in time",
+      });
+    }
+
+    const workingHours = calculateWorkingHours(attendance.checkIn, checkOutTime);
+    const overtimeHours = calculateOvertime(workingHours, 8);
+    let status = attendance.status;
+    if (workingHours < 4) status = "half-day";
+    else if (status === "absent") status = "present";
+
+    attendance.checkOut = checkOutTime;
+    attendance.workingHours = workingHours;
+    attendance.overtimeHours = overtimeHours;
+    attendance.status = status;
+    attendance.remarks = remarks || `HR Clock-out Correction by Admin on ${new Date().toISOString().slice(0, 10)}`;
+
+    await attendance.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Attendance clock-out corrected successfully",
+      data: formatAttendance(attendance),
+    });
+  } catch (error) {
+    console.error("CORRECT CLOCKOUT ERROR:", error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// =====================================================
+// HR ACTION 2: APPROVE MANUAL ADJUSTMENT
+// PATCH /api/v1/attendance/:attendanceId/manual-adjustment
+// =====================================================
+
+const approveManualAdjustment = async (req, res) => {
+  try {
+    const { attendanceId } = req.params;
+    const { workingHours, status = "present", remarks } = req.body;
+
+    const parsedHours = Number(workingHours);
+    if (!Number.isFinite(parsedHours) || parsedHours < 0 || parsedHours > 24) {
+      return res.status(400).json({
+        success: false,
+        message: "Valid working hours between 0 and 24 required",
+      });
+    }
+
+    const attendance = await Attendance.findById(attendanceId).populate("employee");
+    if (!attendance) {
+      return res.status(404).json({
+        success: false,
+        message: "Attendance record not found",
+      });
+    }
+
+    attendance.workingHours = parsedHours;
+    attendance.status = status;
+    attendance.remarks = remarks || `Manual Adjustment Approved: ${parsedHours} hrs`;
+
+    await attendance.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Manual attendance adjustment approved",
+      data: formatAttendance(attendance),
+    });
+  } catch (error) {
+    console.error("MANUAL ADJUSTMENT ERROR:", error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// =====================================================
+// HR ACTION 3: REJECT ATTENDANCE
+// PATCH /api/v1/attendance/:attendanceId/reject
+// =====================================================
+
+const rejectAttendance = async (req, res) => {
+  try {
+    const { attendanceId } = req.params;
+    const { status = "absent", remarks } = req.body;
+
+    if (!["absent", "half-day"].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: "Rejection status must be absent or half-day",
+      });
+    }
+
+    const attendance = await Attendance.findById(attendanceId);
+    if (!attendance) {
+      return res.status(404).json({
+        success: false,
+        message: "Attendance record not found",
+      });
+    }
+
+    attendance.status = status;
+    attendance.workingHours = status === "half-day" ? 4.0 : 0;
+    attendance.remarks = remarks || `Attendance rejected by HR: Marked as ${status}`;
+
+    await attendance.save();
+
+    return res.status(200).json({
+      success: true,
+      message: `Attendance rejected and marked as ${status}`,
+      data: formatAttendance(attendance),
+    });
+  } catch (error) {
+    console.error("REJECT ATTENDANCE ERROR:", error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// =====================================================
+// HR ACTION 4: AUTO-CLOSE MISSING CLOCK-OUTS POLICY
+// POST /api/v1/attendance/auto-close
+// =====================================================
+
+const autoCloseMissingClockouts = async (req, res) => {
+  try {
+    const todayStart = startOfDay(new Date());
+
+    const unclosedRecords = await Attendance.find({
+      date: { $lt: todayStart },
+      checkIn: { $ne: null },
+      checkOut: null,
+    });
+
+    let closedCount = 0;
+    for (const record of unclosedRecords) {
+      const autoCheckOut = new Date(record.date);
+      autoCheckOut.setHours(18, 30, 0, 0);
+
+      const workingHours = calculateWorkingHours(record.checkIn, autoCheckOut);
+      record.checkOut = autoCheckOut;
+      record.workingHours = workingHours;
+      record.remarks = "Auto-closed by System EOD Shift Policy (06:30 PM IST)";
+
+      await record.save();
+      closedCount++;
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: `Successfully auto-closed ${closedCount} missing clock-out records using End-of-Day policy.`,
+      closedCount,
+    });
+  } catch (error) {
+    console.error("AUTO CLOSE ERROR:", error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// =====================================================
 // EXPORT
 // =====================================================
 
 module.exports = {
-
   checkIn,
-
   checkOut,
-
   getMyTodayAttendance,
-
   getMyAttendance,
-
   getAllAttendance,
-
   getMonthlyReport,
-
   getAttendanceSummary,
-
   getMonthlySummary,
+  correctClockOut,
+  approveManualAdjustment,
+  rejectAttendance,
+  autoCloseMissingClockouts,
 };

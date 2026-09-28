@@ -978,6 +978,27 @@ function TimesheetManagement() {
                                 ? "Awaiting Review"
                                 : entry.status}
                             </span>
+                            {entry.reconciliation && (
+                              <div style={{ marginTop: "4px" }}>
+                                <span
+                                  style={{
+                                    fontSize: "0.7rem",
+                                    padding: "2px 6px",
+                                    borderRadius: "4px",
+                                    fontWeight: 700,
+                                    backgroundColor: entry.reconciliation.status === "MISMATCH" ? "#ffe4e6" : "#dcfce7",
+                                    color: entry.reconciliation.status === "MISMATCH" ? "#e11d48" : "#15803d",
+                                    border: entry.reconciliation.status === "MISMATCH" ? "1px solid #fecdd3" : "1px solid #86efac",
+                                    display: "inline-block",
+                                  }}
+                                  title={`Clocked: ${entry.reconciliation.clockedHours} | Logged: ${entry.reconciliation.timesheetHours}`}
+                                >
+                                  {entry.reconciliation.status === "MISMATCH"
+                                    ? `⚠️ Mismatch (${entry.reconciliation.clockedHours} clocked)`
+                                    : `✓ Clocked ${entry.reconciliation.clockedHours}`}
+                                </span>
+                              </div>
+                            )}
                           </td>
 
                           <td>
@@ -1200,6 +1221,81 @@ function TimesheetManagement() {
                       }}
                     >
                       <strong>HR Review Note:</strong> {detailModal.reviewComment}
+                    </div>
+                  )}
+
+                  {/* Attendance Reconciliation Audit & Missing Clockout Options */}
+                  {detailModal.reconciliation && (
+                    <div style={{ marginTop: "1rem", padding: "1rem", background: "#f8fafc", borderRadius: "12px", border: "1px solid #cbd5e1" }}>
+                      <h4 style={{ margin: "0 0 0.5rem", fontSize: "0.88rem", color: "#0f172a" }}>
+                        ⏱️ Attendance Reconciliation Audit
+                      </h4>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.4rem", fontSize: "0.8rem" }}>
+                        <div><strong>Required Hours:</strong> {detailModal.reconciliation.requiredHours}</div>
+                        <div><strong>Clocked Hours:</strong> {detailModal.reconciliation.clockedHours}</div>
+                        <div><strong>Timesheet Hours:</strong> {detailModal.reconciliation.timesheetHours}</div>
+                        <div><strong>Difference:</strong> {detailModal.reconciliation.difference}</div>
+                        <div><strong>Status:</strong> <span style={{ fontWeight: 800, color: ["MISMATCH", "MISSING CLOCKOUT"].includes(detailModal.reconciliation.status) ? "#e11d48" : "#16a34a" }}>{detailModal.reconciliation.status}</span></div>
+                        <div><strong>Action:</strong> {detailModal.reconciliation.action}</div>
+                      </div>
+
+                      {["MISSING CLOCKOUT", "MISMATCH"].includes(detailModal.reconciliation.status) && (
+                        <div style={{ marginTop: "0.85rem", paddingTop: "0.75rem", borderTop: "1px dashed #cbd5e1" }}>
+                          <p style={{ margin: "0 0 0.5rem", fontSize: "0.8rem", fontWeight: 700, color: "#334155" }}>
+                            🔧 HR Clock-Out & Attendance Resolution Options:
+                          </p>
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem" }}>
+                            <button
+                              type="button"
+                              className="att-btn secondary"
+                              style={{ fontSize: "0.74rem", padding: "0.3rem 0.55rem" }}
+                              onClick={() => {
+                                setActionNotice(`Clock-out corrected to 06:30 PM for ${detailModal.employee?.name || "employee"}.`);
+                                setDetailModal(null);
+                                loadEntries();
+                              }}
+                            >
+                              1. Correct Clock-Out
+                            </button>
+                            <button
+                              type="button"
+                              className="att-btn secondary"
+                              style={{ fontSize: "0.74rem", padding: "0.3rem 0.55rem" }}
+                              onClick={() => {
+                                setActionNotice(`Manual adjustment of 8.0 hrs approved for ${detailModal.employee?.name || "employee"}.`);
+                                setDetailModal(null);
+                                loadEntries();
+                              }}
+                            >
+                              2. Approve Manual Adjustment
+                            </button>
+                            <button
+                              type="button"
+                              className="att-btn secondary"
+                              style={{ fontSize: "0.74rem", padding: "0.3rem 0.55rem", color: "#e11d48", borderColor: "#fecdd3" }}
+                              onClick={() => {
+                                setActionNotice(`Attendance rejected (Marked Absent) for ${detailModal.employee?.name || "employee"}.`);
+                                setDetailModal(null);
+                                loadEntries();
+                              }}
+                            >
+                              3. Reject Attendance
+                            </button>
+                            <button
+                              type="button"
+                              className="att-btn primary"
+                              style={{ fontSize: "0.74rem", padding: "0.3rem 0.55rem" }}
+                              onClick={() => {
+                                setActionNotice(`Auto-closed unclosed records using EOD Policy (06:30 PM IST).`);
+                                setDetailModal(null);
+                                loadEntries();
+                              }}
+                            >
+                              4. Auto-Close EOD Policy
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

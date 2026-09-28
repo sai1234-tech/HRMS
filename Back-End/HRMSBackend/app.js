@@ -152,6 +152,8 @@ app.get("/health", (req, res) => {
 const managerRoutes = require("./routes/manager.routes");
 const performanceRoutes = require("./routes/performance.routes");
 const pulseRoutes = require("./routes/pulse.routes");
+const resignationRoutes = require("./routes/resignation.routes");
+const clearanceRoutes = require("./routes/clearance.routes");
 
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/employees", employeeRoutes);
@@ -166,6 +168,9 @@ app.use("/api/v1/manager", managerRoutes);
 app.use("/api/v1/performance", performanceRoutes);
 app.use("/api/v1/tickets", ticketRoutes);
 app.use("/api/v1/pulse", pulseRoutes);
+app.use("/api/v1/resignations", resignationRoutes);
+app.use("/api/v1/clearance", clearanceRoutes);
+app.use("/api/v1/holidays", require("./routes/holiday.routes"));
 
 app.use(errorHandler);
 

@@ -88,9 +88,10 @@ function EmployeeAttendance() {
             </p>
 
             <div className="emp-meta-pills">
-              <span className="meta-pill-tag">📍 Hyderabad HQ</span>
-              <span className="meta-pill-tag">🕒 Shift Window: 09:30 AM – 06:30 PM</span>
-              <span className="meta-pill-tag">🎯 Daily Target: 8.0 hrs</span>
+              <span className="meta-pill-tag">🕒 Shift Window: 09:30 AM – 06:30 PM (IST)</span>
+              <span className="meta-pill-tag">🎯 Net Work Target: 8.0 hrs</span>
+              <span className="meta-pill-tag">🍱 Lunch Break: 45 Mins</span>
+              <span className="meta-pill-tag">📍 Asia/Kolkata (IST)</span>
             </div>
           </div>
 

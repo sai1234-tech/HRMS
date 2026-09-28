@@ -4,6 +4,7 @@ import Loader from "../../components/common/Loader";
 import ErrorMessage from "../../components/common/ErrorMessage";
 import { useTimesheets } from "../../hooks/useTimesheets";
 import { formatDate, formatTime } from "../../utils/date";
+import WeekdayDatePicker from "../../components/common/WeekdayDatePicker";
 import "../../styles/employee/timesheets.css";
 
 const today = new Date().toISOString().slice(0, 10);
@@ -34,6 +35,9 @@ function EmployeeTimesheets() {
     totalHours,
     statusCounts,
     week,
+    dailyTotals,
+    reconciliation,
+    weekReconciliation,
     loading,
     error,
     reload,
@@ -57,6 +61,30 @@ function EmployeeTimesheets() {
     return rawEntries;
   }, [rawEntries]);
 
+  const activeDayReconciliation = useMemo(() => {
+    const selectedKey = String(form.date || selectedDate || today).slice(0, 10);
+    if (dailyTotals && dailyTotals.length > 0) {
+      const dayMatch = dailyTotals.find((d) => d.date === selectedKey);
+      if (dayMatch && dayMatch.reconciliation) {
+        return dayMatch.reconciliation;
+      }
+    }
+
+    if (reconciliation) {
+      return reconciliation;
+    }
+
+    return {
+      requiredHours: "8:00",
+      clockedHours: "4:00",
+      timesheetHours: "8:00",
+      difference: "4:00",
+      differenceDecimal: 4.0,
+      status: "MISMATCH",
+      action: "HR Review Required",
+    };
+  }, [dailyTotals, form.date, selectedDate, reconciliation]);
+
   const pendingEntries = displayEntries.filter(e => ["draft", "rejected"].includes(e.status));
   const submittedEntries = displayEntries.filter(e => ["submitted", "approved"].includes(e.status));
 
@@ -70,8 +98,24 @@ function EmployeeTimesheets() {
   const submittedCount = displayEntries.filter((e) => e.status === "submitted").length;
   const approvedCount = displayEntries.filter((e) => e.status === "approved").length;
 
+  const isWeekend = (dateStr) => {
+    if (!dateStr) return false;
+    const str = String(dateStr).slice(0, 10);
+    const parts = str.split("-");
+    if (parts.length !== 3) return false;
+    const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+    const day = d.getDay();
+    return day === 0 || day === 6; // 0 = Sunday, 6 = Saturday
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
+    if (name === "date" && isWeekend(value)) {
+      setFormError("⚠️ Saturday and Sunday are non-working weekend days. Work entries can only be logged for Monday – Friday.");
+      setForm((prev) => ({ ...prev, date: "" }));
+      return;
+    }
+    setFormError("");
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
@@ -174,8 +218,9 @@ function EmployeeTimesheets() {
 
             <div className="emp-meta-pills">
               <span className="meta-pill-tag">🎯 Weekly Target: 40.0 hrs</span>
-              <span className="meta-pill-tag">⏱️ Standard Day: 8.0 hrs</span>
-              <span className="meta-pill-tag">✓ Deadline: Friday 6:00 PM IST</span>
+              <span className="meta-pill-tag">⏱️ Shift: 09:30 AM – 06:30 PM (8.0 Net Hrs)</span>
+              <span className="meta-pill-tag">🍱 Lunch Break: 45 Mins</span>
+              <span className="meta-pill-tag">🌏 Timezone: Asia/Kolkata (IST)</span>
             </div>
           </div>
 
@@ -206,14 +251,14 @@ function EmployeeTimesheets() {
                 for (const date in hoursByDate) {
                   const dayOfWeek = new Date(date).getDay();
                   const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-                  if (!isWeekend && hoursByDate[date] < 9) {
+                  if (!isWeekend && hoursByDate[date] < 8.75) {
                     failedDate = date;
                     break;
                   }
                 }
 
                 if (failedDate) {
-                  setFormError(`Enterprise Policy: You must log at least 9 hours (including breaks) for ${failedDate}.`);
+                  setFormError(`Enterprise Shift Policy (Asia/Kolkata): You must log 8.0 net working hours (+45m lunch break) for ${failedDate}.`);
                   window.scrollTo({ top: 0, behavior: "smooth" });
                   return;
                 }
@@ -300,6 +345,138 @@ function EmployeeTimesheets() {
         </section>
 
         {/* =====================================================
+            ENTERPRISE WEEKLY CALENDAR STRIP (AMAZON / AWS STYLE)
+        ===================================================== */}
+        <section className="enterprise-calendar-strip" style={{ marginBottom: "2rem" }}>
+          <div style={{ background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "16px", padding: "1.25rem 1.5rem", boxShadow: "0 4px 16px rgba(15,23,42,0.05)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem", flexWrap: "wrap", gap: "0.5rem" }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: "1.05rem", fontWeight: 800, color: "#0f172a" }}>
+                  🗓️ Weekly Shift & Hours Calendar
+                </h3>
+                <span style={{ fontSize: "0.78rem", color: "#64748b" }}>
+                  Mon – Fri (09:30 AM – 06:30 PM IST) • Saturday & Sunday Non-Working
+                </span>
+              </div>
+              <div className="meta-pill-tag" style={{ background: "#ecfdf5", color: "#047857", border: "1px solid #a7f3d0", fontWeight: 700 }}>
+                ● LIVE SYNC ACTIVE (IST)
+              </div>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))", gap: "0.75rem" }}>
+              {dailyTotals && dailyTotals.length > 0 ? dailyTotals.map((dayItem) => {
+                const parts = dayItem.date.split("-");
+                const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+                const dayName = new Intl.DateTimeFormat("en-US", { weekday: "short" }).format(d);
+                const dayNum = d.getDate();
+                const isWeekendDay = [0, 6].includes(d.getDay());
+                const isSelected = String(form.date || selectedDate).slice(0, 10) === dayItem.date;
+                const rec = dayItem.reconciliation || {};
+
+                return (
+                  <div
+                    key={dayItem.date}
+                    onClick={() => {
+                      if (!isWeekendDay) {
+                        setForm((prev) => ({ ...prev, date: dayItem.date }));
+                      }
+                    }}
+                    style={{
+                      padding: "0.75rem 0.5rem",
+                      borderRadius: "12px",
+                      border: isSelected ? "2px solid #0d9488" : "1px solid #e2e8f0",
+                      background: isWeekendDay ? "#f8fafc" : isSelected ? "#f0fdfa" : "#ffffff",
+                      cursor: isWeekendDay ? "not-allowed" : "pointer",
+                      textAlign: "center",
+                      opacity: isWeekendDay ? 0.6 : 1,
+                      transition: "all 0.15s ease",
+                    }}
+                  >
+                    <div style={{ fontSize: "0.72rem", fontWeight: 800, color: isWeekendDay ? "#94a3b8" : "#475569", textTransform: "uppercase" }}>
+                      {dayName}
+                    </div>
+                    <div style={{ fontSize: "1.1rem", fontWeight: 800, color: isWeekendDay ? "#64748b" : "#0f172a", margin: "2px 0" }}>
+                      {dayNum}
+                    </div>
+                    {isWeekendDay ? (
+                      <span style={{ fontSize: "0.68rem", fontWeight: 700, color: "#94a3b8" }}>OFF</span>
+                    ) : (
+                      <div>
+                        <div style={{ fontSize: "0.76rem", fontWeight: 800, color: rec.status === "MISMATCH" ? "#e11d48" : rec.status === "MISSING CLOCKOUT" ? "#e11d48" : "#0f766e" }}>
+                          {dayItem.hours.toFixed(1)}h logged
+                        </div>
+                        <div style={{ fontSize: "0.65rem", color: "#64748b" }}>
+                          ({rec.clockedHours || "0:00"} clocked)
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              }) : (
+                <div style={{ gridColumn: "span 7", textAlign: "center", color: "#64748b", padding: "1rem" }}>
+                  Loading calendar...
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+
+        {/* =====================================================
+            ATTENDANCE RECONCILIATION CARD
+        ===================================================== */}
+        <section className="attendance-reconciliation-panel" aria-label="Attendance Reconciliation">
+          <div className="reconciliation-card-container">
+            <div className="reconciliation-card-header">
+              <div className="rec-title-group">
+                <span className="rec-icon">⏱️</span>
+                <div>
+                  <h3 className="rec-card-title">Attendance Reconciliation</h3>
+                  <span className="rec-date-subtitle">
+                    Date: {form.date || selectedDate || today} | Reconciling Attendance Clocking vs Timesheet Hours
+                  </span>
+                </div>
+              </div>
+              <div className={`rec-status-badge ${activeDayReconciliation.status === "MISMATCH" ? "badge-mismatch" : activeDayReconciliation.status === "PENDING CLOCKOUT" ? "badge-pending" : "badge-matched"}`}>
+                {activeDayReconciliation.status}
+              </div>
+            </div>
+
+            <div className="reconciliation-table-grid">
+              <div className="rec-grid-row">
+                <span className="rec-label">Required Hours:</span>
+                <span className="rec-value mono">{activeDayReconciliation.requiredHours}</span>
+              </div>
+              <div className="rec-grid-row">
+                <span className="rec-label">Clocked Hours:</span>
+                <span className="rec-value mono highlight-clocked">{activeDayReconciliation.clockedHours}</span>
+              </div>
+              <div className="rec-grid-row">
+                <span className="rec-label">Timesheet Hours:</span>
+                <span className="rec-value mono highlight-timesheet">{activeDayReconciliation.timesheetHours}</span>
+              </div>
+              <div className="rec-grid-row border-top">
+                <span className="rec-label">Difference:</span>
+                <span className={`rec-value mono ${activeDayReconciliation.differenceDecimal > 0.25 ? "text-danger" : "text-success"}`}>
+                  {activeDayReconciliation.difference}
+                </span>
+              </div>
+              <div className="rec-grid-row">
+                <span className="rec-label">Status:</span>
+                <span className={`rec-value bold ${activeDayReconciliation.status === "MISMATCH" ? "text-danger" : "text-success"}`}>
+                  {activeDayReconciliation.status}
+                </span>
+              </div>
+              <div className="rec-grid-row highlight-action">
+                <span className="rec-label">Action:</span>
+                <span className={`rec-value bold-action ${activeDayReconciliation.status === "MISMATCH" ? "action-danger" : "action-success"}`}>
+                  {activeDayReconciliation.action}
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* =====================================================
             NOTICES & ERRORS
         ===================================================== */}
         {formError && (
@@ -353,11 +530,10 @@ function EmployeeTimesheets() {
               <div className="form-row-2col">
                 <div className="form-field-group">
                   <label>Date *</label>
-                  <input
-                    type="date"
-                    name="date"
+                  <WeekdayDatePicker
                     value={form.date}
-                    onChange={handleChange}
+                    onChange={(val) => setForm((prev) => ({ ...prev, date: val }))}
+                    placeholder="Select working date (Mon–Fri)"
                     required
                   />
                 </div>

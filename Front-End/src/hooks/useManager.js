@@ -7,6 +7,7 @@ export const useManager = () => {
   const [leaves, setLeaves] = useState([]);
   const [timesheets, setTimesheets] = useState([]);
   const [projects, setProjects] = useState([]);
+  const [resignations, setResignations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -46,6 +47,15 @@ export const useManager = () => {
     }
   }, []);
 
+  const fetchResignations = useCallback(async () => {
+    try {
+      const res = await apiRequest("/resignations/team");
+      if (res.success) setResignations(res.data);
+    } catch (err) {
+      console.error("Failed to fetch resignations:", err);
+    }
+  }, []);
+
   const loadAll = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     setError(null);
@@ -55,13 +65,14 @@ export const useManager = () => {
         fetchLeaves(),
         fetchTimesheets(),
         fetchProjects(),
+        fetchResignations(),
       ]);
     } catch (err) {
       if (!silent) setError("Failed to load manager data");
     } finally {
       if (!silent) setLoading(false);
     }
-  }, [fetchOverview, fetchLeaves, fetchTimesheets, fetchProjects]);
+  }, [fetchOverview, fetchLeaves, fetchTimesheets, fetchProjects, fetchResignations]);
 
   useEffect(() => {
     loadAll();
@@ -134,11 +145,44 @@ export const useManager = () => {
     }
   };
 
+  const approveResignation = async (id, comment) => {
+    try {
+      const res = await apiRequest(`/resignations/${id}/manager-review`, {
+        method: "PATCH",
+        body: JSON.stringify({ status: "manager_approved", managerReviewComment: comment }),
+      });
+      if (res.success) {
+        await loadAll(true);
+        return true;
+      }
+    } catch (err) {
+      console.error("Approve resignation error:", err);
+      return false;
+    }
+  };
+
+  const rejectResignation = async (id, comment) => {
+    try {
+      const res = await apiRequest(`/resignations/${id}/manager-review`, {
+        method: "PATCH",
+        body: JSON.stringify({ status: "manager_rejected", managerReviewComment: comment }),
+      });
+      if (res.success) {
+        await loadAll(true);
+        return true;
+      }
+    } catch (err) {
+      console.error("Reject resignation error:", err);
+      return false;
+    }
+  };
+
   return {
     overview,
     leaves,
     timesheets,
     projects,
+    resignations,
     loading,
     error,
     refresh: loadAll,
@@ -146,5 +190,7 @@ export const useManager = () => {
     rejectLeave,
     approveTimesheet,
     rejectTimesheet,
+    approveResignation,
+    rejectResignation,
   };
 };

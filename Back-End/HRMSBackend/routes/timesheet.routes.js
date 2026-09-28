@@ -9,6 +9,7 @@ const {
   getMyTimesheets,
   getMyWeek,
   getMySummary,
+  getAttendanceReconciliation,
   updateTimesheet,
   deleteTimesheet,
   submitTimesheet,
@@ -60,6 +61,14 @@ router.get(
   authMiddleware,
   authorizeRoles(...ALL_ROLES),
   getMyWeek
+);
+
+// Attendance Reconciliation
+router.get(
+  "/reconciliation",
+  authMiddleware,
+  authorizeRoles(...ALL_ROLES),
+  getAttendanceReconciliation
 );
 
 // My dashboard summary

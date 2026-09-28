@@ -1149,3 +1149,135 @@
     padding: 1rem;
   }
 }
+
+/* ==========================================================================
+   Premium Exit Approved Card Styles
+   ========================================================================== */
+.exit-approved-card {
+  background: linear-gradient(145deg, #f0fdf4 0%, #dcfce7 100%);
+  border: 1px solid #bbf7d0;
+  border-radius: 16px;
+  box-shadow: 0 10px 25px -5px rgba(22, 163, 74, 0.15);
+  position: relative;
+  overflow: hidden;
+}
+
+.exit-approved-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 6px;
+  height: 100%;
+  background: #16a34a;
+}
+
+.exit-approved-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 16px;
+  border-bottom: 1px dashed #86efac;
+  margin-bottom: 20px;
+}
+
+.exit-approved-header h2 {
+  margin: 0;
+  color: #166534;
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.exit-metrics-wrapper {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.exit-metric-premium {
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(22, 163, 74, 0.2);
+  border-radius: 12px;
+  padding: 16px;
+  transition: transform 0.2s;
+}
+
+.exit-metric-premium:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.exit-metric-highlight {
+  background: #16a34a;
+  color: white;
+  border: none;
+  box-shadow: 0 8px 20px -6px rgba(22, 163, 74, 0.4);
+}
+
+.exit-metric-highlight:hover {
+  background: #15803d;
+}
+
+.exit-metric-premium .label {
+  display: block;
+  font-size: 0.85rem;
+  color: #15803d;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+}
+
+.exit-metric-highlight .label {
+  color: #dcfce7;
+}
+
+.exit-metric-premium .value {
+  font-size: 1.3rem;
+  color: #14532d;
+  font-weight: 700;
+}
+
+.exit-metric-highlight .value {
+  color: white;
+  font-size: 1.5rem;
+}
+
+.exit-hr-feedback-premium {
+  margin-top: 24px;
+  padding: 20px;
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #bbf7d0;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.exit-hr-feedback-premium h4 {
+  color: #166534;
+  font-size: 1.1rem;
+  margin: 0 0 12px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.exit-hr-feedback-premium p {
+  color: #374151;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.exit-next-steps-banner {
+  margin-top: 20px;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border-left: 4px solid #3b82f6;
+}
+
+.exit-next-steps-banner p {
+  color: #1e293b;
+  margin: 0;
+  font-size: 0.95rem;
+}

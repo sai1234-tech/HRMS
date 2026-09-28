@@ -13,6 +13,8 @@ import EmployeeProfile from "../pages/employee/EmployeeProfile";
 import EmployeePayroll from "../pages/employee/EmployeePayroll";
 import EmployeeDocuments from "../pages/employee/EmployeeDocuments";
 import Performance from "../pages/employee/Performance";
+import EmployeeResignation from "../pages/employee/EmployeeResignation";
+import EmployeeCalendar from "../pages/employee/EmployeeCalendar";
 
 // Manager pages
 import ManagerDashboard from "../pages/manager/ManagerDashboard.jsx";
@@ -31,6 +33,7 @@ import ShiftRoster from "../pages/hr/ShiftRoster";
 import Helpdesk from "../pages/hr/Helpdesk";
 import HRPerformance from "../pages/hr/HRPerformance";
 import HRLeaveManagement from "../pages/hr/HRLeaveManagement";
+import HRResignationManagement from "../pages/hr/HRResignationManagement";
 import AccountManagement from "../pages/admin/AccountManagement";
 import AdminDashboard from "../pages/admin/AdminDashboard";
 import OrganizationHierarchy from "../pages/organization/OrganizationHierarchy";
@@ -123,6 +126,15 @@ function AppRoutes() {
             </ProtectedRoute>
           }
         />
+        
+        <Route
+          path="/employee/calendar"
+          element={
+            <ProtectedRoute roles={ALL_ROLES}>
+              <EmployeeCalendar />
+            </ProtectedRoute>
+          }
+        />
 
         <Route
           path="/employee/attendance"
@@ -210,6 +222,15 @@ function AppRoutes() {
           element={
             <ProtectedRoute roles={ALL_ROLES}>
               <EmployeeDocuments />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/employee/resignation"
+          element={
+            <ProtectedRoute roles={ALL_ROLES}>
+              <EmployeeResignation />
             </ProtectedRoute>
           }
         />
@@ -366,6 +387,7 @@ function AppRoutes() {
 
         <Route path="/hr/leaves" element={<ProtectedRoute roles={["hr", "admin"]}><HRLeaveManagement /></ProtectedRoute>} />
         <Route path="/hr/documents" element={<ProtectedRoute roles={["hr", "admin"]}><DocumentManagement /></ProtectedRoute>} />
+        <Route path="/hr/resignations" element={<ProtectedRoute roles={["hr", "admin"]}><HRResignationManagement /></ProtectedRoute>} />
         <Route path="/hr/organization" element={<ProtectedRoute roles={ALL_ROLES}><OrganizationHierarchy /></ProtectedRoute>} />
         <Route path="/organization" element={<ProtectedRoute roles={ALL_ROLES}><OrganizationHierarchy /></ProtectedRoute>} />
         <Route path="/employee/organization" element={<ProtectedRoute roles={ALL_ROLES}><OrganizationHierarchy /></ProtectedRoute>} />

@@ -6,6 +6,15 @@ import { formatDate } from "../../utils/date";
 import Loader from "../../components/common/Loader";
 import "./ManagerDashboard.css";
 
+const formatPhotoUrl = (photo) => {
+  if (!photo || photo.startsWith("blob:")) return photo || "";
+  if (/^https?:\/\//i.test(photo) || photo.startsWith("data:")) return photo;
+  const apiUrl = (String(import.meta.env.VITE_API_URL || "").replace("localhost", "127.0.0.1") || "http://127.0.0.1:3000/api/v1").replace(/\/$/, "");
+  const cleanPhoto = String(photo).replace(/\\/g, "/").replace(/^\/?api(\/v1)?\/?/, "");
+  const baseUrl = apiUrl.replace(/\/api(\/v1)?\/?$/, "");
+  return `${baseUrl}${cleanPhoto.startsWith("/") ? cleanPhoto : `/${cleanPhoto}`}`;
+};
+
 function ManagerDashboard() {
   const {
     overview,
@@ -18,6 +27,9 @@ function ManagerDashboard() {
     rejectLeave,
     approveTimesheet,
     rejectTimesheet,
+    resignations,
+    approveResignation,
+    rejectResignation,
   } = useManager();
 
   const [activeTab, setActiveTab] = useState("all");
@@ -43,10 +55,15 @@ function ManagerDashboard() {
     overview?.pendingLeaves || 0,
     pendingLeavesList.length
   );
-  const totalPending = pendingLeavesCount + (overview?.pendingTimesheets || 0);
+  
+  const pendingResignationsList = (resignations || []).filter(r => r.status === "pending");
+  const pendingResignationsCount = pendingResignationsList.length;
+
+  const totalPending = pendingLeavesCount + (overview?.pendingTimesheets || 0) + pendingResignationsCount;
   const teamMembers = overview?.teamMembers || [];
 
   const leavesToDisplay = activeTab === "all" ? pendingLeavesList : leaves;
+  const resignationsToDisplay = activeTab === "all" ? pendingResignationsList : resignations;
 
   const filteredProjects = (projects || []).filter((p) => {
     if (!projectSearch.trim()) return true;
@@ -107,7 +124,7 @@ function ManagerDashboard() {
             <div className="manager-kpi-card">
               <div className="kpi-label">PENDING APPROVALS</div>
               <div className={`kpi-value ${totalPending > 0 ? "urgent" : "success"}`}>{totalPending}</div>
-              <div className="kpi-subtext muted">{pendingLeavesCount} Leaves • {overview?.pendingTimesheets || 0} Timesheets</div>
+              <div className="kpi-subtext muted">{pendingLeavesCount} Leaves • {overview?.pendingTimesheets || 0} Timesheets • {pendingResignationsCount} Exits</div>
             </div>
 
             <div className="manager-kpi-card">
@@ -185,6 +202,13 @@ function ManagerDashboard() {
                 >
                   Timesheets <span>{overview?.pendingTimesheets || 0}</span>
                 </button>
+                <button
+                  type="button"
+                  className={`filter-tab-btn ${activeTab === "resignation" ? "active" : ""}`}
+                  onClick={() => setActiveTab("resignation")}
+                >
+                  Resignations <span>{pendingResignationsCount}</span>
+                </button>
               </div>
             </div>
 
@@ -204,7 +228,7 @@ function ManagerDashboard() {
                         <div className="user-avatar-circle">
                           {req.employee?.profilePhoto ? (
                             <img 
-                              src={req.employee.profilePhoto} 
+                              src={formatPhotoUrl(req.employee.profilePhoto)} 
                               alt={req.employee.firstName}
                               onError={(e) => {
                                 e.currentTarget.style.display = "none";
@@ -274,7 +298,7 @@ function ManagerDashboard() {
                         <div className="user-avatar-circle">
                           {req.employee?.profilePhoto ? (
                             <img 
-                              src={req.employee.profilePhoto} 
+                              src={formatPhotoUrl(req.employee.profilePhoto)} 
                               alt={req.employee.firstName}
                               onError={(e) => {
                                 e.currentTarget.style.display = "none";
@@ -322,6 +346,74 @@ function ManagerDashboard() {
                         type="button"
                         className="card-action-btn approve"
                         onClick={() => approveTimesheet(req._id, "Approved by manager")}
+                      >
+                        Approve
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              {/* RESIGNATIONS */}
+                {filterItems("resignation") && resignationsToDisplay.map((req) => (
+                  <div key={req._id} className="approval-card-box resignation-type" style={{ borderLeftColor: '#f43f5e' }}>
+                    <div className="card-profile-header">
+                      <div className="user-avatar-meta">
+                        <div className="user-avatar-circle">
+                          {req.employee?.profilePhoto ? (
+                            <img 
+                              src={formatPhotoUrl(req.employee.profilePhoto)} 
+                              alt={req.employee.firstName}
+                              onError={(e) => {
+                                e.currentTarget.style.display = "none";
+                                const fallback = e.currentTarget.nextElementSibling;
+                                if (fallback) fallback.style.display = "inline";
+                              }} 
+                            />
+                          ) : null}
+                          <span style={{ display: req.employee?.profilePhoto ? "none" : "inline" }}>
+                            {(req.employee?.firstName?.charAt(0) || req.employee?.lastName?.charAt(0) || req.employee?.name?.charAt(0) || "U").toUpperCase()}
+                          </span>
+                        </div>
+                        <div className="user-info-text">
+                          <span className="user-full-name">{req.employee?.firstName} {req.employee?.lastName}</span>
+                          <span className="user-emp-code">{req.employee?.employeeCode}</span>
+                        </div>
+                      </div>
+                      <span className="type-pill-tag" style={{ background: '#ffe4e6', color: '#e11d48' }}>Resignation • Step 1/2</span>
+                    </div>
+                    
+                    <div className="request-details-inner">
+                      <div className="req-meta-row">
+                        <span className="req-meta-label">Approval Stage:</span>
+                        <span className="req-meta-val" style={{ color: "#e11d48", fontWeight: 600 }}>
+                          🟡 Step 1: Manager Review (Pending) ➔ Step 2: HR Final
+                        </span>
+                      </div>
+                      <div className="req-meta-row">
+                        <span className="req-meta-label">Requested LWD:</span>
+                        <span className="req-meta-val">{formatDate(req.requestedLastWorkingDay)}</span>
+                      </div>
+                      <div className="req-meta-row">
+                        <span className="req-meta-label">Reason:</span>
+                        <span className="req-meta-val" style={{ textTransform: 'capitalize' }}>{req.reasonCategory?.replace("-", " ")}</span>
+                      </div>
+                      <div className="req-meta-row">
+                        <span className="req-meta-label">Employee Note:</span>
+                        <span className="req-meta-val" style={{ fontStyle: 'italic', fontSize: '0.85rem' }}>"{req.reasonDetails}"</span>
+                      </div>
+                    </div>
+
+                    <div className="card-actions-group">
+                      <button
+                        type="button"
+                        className="card-action-btn decline"
+                        onClick={() => rejectResignation(req._id, "Declined by manager")}
+                      >
+                        Decline
+                      </button>
+                      <button
+                        type="button"
+                        className="card-action-btn approve"
+                        onClick={() => approveResignation(req._id, "Approved by manager")}
                       >
                         Approve
                       </button>
@@ -524,7 +616,7 @@ function ManagerDashboard() {
                                 <span key={mIdx} className={`avatar-chip ${mIdx === 1 ? "blue" : mIdx === 2 ? "indigo" : ""}`} title={fullNameStr}>
                                   {m.profilePhoto ? (
                                     <img 
-                                      src={m.profilePhoto} 
+                                      src={formatPhotoUrl(m.profilePhoto)} 
                                       alt={m.firstName}
                                       style={{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover" }}
                                       onError={(e) => {

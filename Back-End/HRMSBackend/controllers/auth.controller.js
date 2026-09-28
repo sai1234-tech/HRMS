@@ -597,6 +597,9 @@ const login = async (req, res) => {
 
             email:
               employee.email,
+
+            profilePhoto:
+              employee.profilePhoto || "",
           }
         : null,
     });

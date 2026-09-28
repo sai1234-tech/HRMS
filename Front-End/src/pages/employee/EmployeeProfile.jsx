@@ -350,8 +350,8 @@ function EmployeeProfile() {
     localPreview ||
     profilePhotoUrl(profile.profilePhoto) ||
     profilePhotoUrl(user?.profilePhoto) ||
-    profilePhotoUrl(localStorage.getItem("hrms_profile_photo")) ||
-    profilePhotoUrl(sessionStorage.getItem("hrms_profile_photo"));
+    (localStorage.getItem("hrms_profile_photo") && !localStorage.getItem("hrms_profile_photo").startsWith("blob:") ? profilePhotoUrl(localStorage.getItem("hrms_profile_photo")) : "") ||
+    (sessionStorage.getItem("hrms_profile_photo") && !sessionStorage.getItem("hrms_profile_photo").startsWith("blob:") ? profilePhotoUrl(sessionStorage.getItem("hrms_profile_photo")) : "");
 
   const handleProfilePictureChange = async (event) => {
     const file = event.target.files?.[0];
@@ -374,14 +374,15 @@ function EmployeeProfile() {
 
       const preview = URL.createObjectURL(file);
       setLocalPreview(preview);
-      if (updateProfilePhoto) {
-        updateProfilePhoto(preview);
-      }
 
       const uploadResult = await uploadProfilePicture(file);
-      const finalPhoto = uploadResult?.profilePhoto || uploadResult?.employee?.profilePhoto || preview;
-      localStorage.setItem("hrms_profile_photo", finalPhoto);
-      sessionStorage.setItem("hrms_profile_photo", finalPhoto);
+      const serverPhoto = uploadResult?.profilePhoto || uploadResult?.employee?.profilePhoto || uploadResult?.data?.profilePhoto;
+
+      const finalPhoto = serverPhoto || preview;
+      if (serverPhoto) {
+        localStorage.setItem("hrms_profile_photo", serverPhoto);
+        sessionStorage.setItem("hrms_profile_photo", serverPhoto);
+      }
       if (updateProfilePhoto) {
         updateProfilePhoto(finalPhoto);
       }

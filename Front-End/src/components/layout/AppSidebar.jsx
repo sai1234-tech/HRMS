@@ -189,6 +189,10 @@ function AppSidebar() {
                   <span className="nav-item-icon">📂</span>
                   {!isCollapsed && <span className="nav-item-label">Documents</span>}
                 </NavLink>
+                <NavLink to="/employee/resignation" end className="sidebar-nav-link" title="Resignation Portal">
+                  <span className="nav-item-icon">🚪</span>
+                  {!isCollapsed && <span className="nav-item-label">Resignation</span>}
+                </NavLink>
               </div>
 
               <div className="sidebar-nav-group">
@@ -196,6 +200,10 @@ function AppSidebar() {
                 <NavLink to="/organization" end className="sidebar-nav-link" title="Organization Hierarchy & Teams">
                   <span className="nav-item-icon">🌳</span>
                   {!isCollapsed && <span className="nav-item-label">Org Chart</span>}
+                </NavLink>
+                <NavLink to="/employee/calendar" end className="sidebar-nav-link" title="Corporate Holiday Calendar">
+                  <span className="nav-item-icon">🗓️</span>
+                  {!isCollapsed && <span className="nav-item-label">Holiday Calendar</span>}
                 </NavLink>
                 <NavLink to="/employee/profile" end className="sidebar-nav-link" title="Personal & Employment Profile">
                   <span className="nav-item-icon">👤</span>
@@ -281,6 +289,10 @@ function AppSidebar() {
                   <span className="nav-item-icon">🌴</span>
                   {!isCollapsed && <span className="nav-item-label">Leave Management</span>}
                 </NavLink>
+                <NavLink to="/hr/resignations" end className="sidebar-nav-link" title="Resignation Management">
+                  <span className="nav-item-icon">🚪</span>
+                  {!isCollapsed && <span className="nav-item-label">Resignations</span>}
+                </NavLink>
                 <NavLink to="/hr/performance" end className="sidebar-nav-link" title="Appraisals & Performance">
                   <span className="nav-item-icon">🎯</span>
                   {!isCollapsed && <span className="nav-item-label">Appraisals</span>}
@@ -345,6 +357,10 @@ function AppSidebar() {
                 <NavLink to="/hr/leaves" end className="sidebar-nav-link" title="Leave Management">
                   <span className="nav-item-icon">🌴</span>
                   {!isCollapsed && <span className="nav-item-label">Leave Management</span>}
+                </NavLink>
+                <NavLink to="/hr/resignations" end className="sidebar-nav-link" title="Resignation Approvals">
+                  <span className="nav-item-icon">🚪</span>
+                  {!isCollapsed && <span className="nav-item-label">Resignations</span>}
                 </NavLink>
                 <NavLink to="/hr/documents" end className="sidebar-nav-link" title="Compliance Vault">
                   <span className="nav-item-icon">📂</span>

@@ -2,6 +2,7 @@
 const mongoose = require("mongoose");
 const Timesheet = require("../models/Timesheet");
 const Employee = require("../models/Employee");
+const Attendance = require("../models/Attendance");
 
 // =====================================================
 // HELPERS
@@ -9,6 +10,78 @@ const Employee = require("../models/Employee");
 
 const getEmployeeByUser = (userId) => {
   return Employee.findOne({ user: userId });
+};
+
+const formatHoursToHHMM = (decimalHours) => {
+  if (decimalHours === undefined || decimalHours === null || Number.isNaN(decimalHours) || decimalHours < 0) {
+    return "0:00";
+  }
+  const totalMinutes = Math.round(decimalHours * 60);
+  const hrs = Math.floor(totalMinutes / 60);
+  const mins = totalMinutes % 60;
+  return `${hrs}:${String(mins).padStart(2, "0")}`;
+};
+
+const computeReconciliationData = (attendanceRecord, timesheetHoursSum, standardRequiredHours = 8.0) => {
+  let clockedHours = 0;
+  let isMissingClockout = false;
+  let isPendingClockout = false;
+
+  if (attendanceRecord) {
+    if (attendanceRecord.workingHours && attendanceRecord.workingHours > 0) {
+      clockedHours = attendanceRecord.workingHours;
+    } else if (attendanceRecord.checkIn && !attendanceRecord.checkOut) {
+      const recDateStr = formatDateKey(new Date(attendanceRecord.date));
+      const todayStr = formatDateKey(new Date());
+
+      if (recDateStr < todayStr) {
+        isMissingClockout = true;
+        clockedHours = 0;
+      } else {
+        const elapsedMs = new Date() - new Date(attendanceRecord.checkIn);
+        const elapsedMins = Math.max(0, Math.floor(elapsedMs / (1000 * 60)) - 45);
+        clockedHours = Number((Math.max(0, elapsedMins) / 60).toFixed(2));
+        isPendingClockout = true;
+      }
+    }
+  }
+
+  const timesheetHours = Number((timesheetHoursSum || 0).toFixed(2));
+  const diffDecimal = Number(Math.abs(timesheetHours - clockedHours).toFixed(2));
+
+  let status = "MATCHED";
+  let action = "Ready for Submission";
+
+  if (isMissingClockout) {
+    status = "MISSING CLOCKOUT";
+    action = "HR Clock-Out Correction Required";
+  } else if (isPendingClockout && clockedHours < standardRequiredHours) {
+    status = "PENDING CLOCKOUT";
+    action = "Clock Out Required";
+  } else if (diffDecimal > 0.25) {
+    status = "MISMATCH";
+    action = "HR Review Required";
+  } else {
+    status = "MATCHED";
+    action = "Ready for Submission";
+  }
+
+  return {
+    requiredHoursDecimal: standardRequiredHours,
+    requiredHours: formatHoursToHHMM(standardRequiredHours),
+    clockedHoursDecimal: clockedHours,
+    clockedHours: formatHoursToHHMM(clockedHours),
+    timesheetHoursDecimal: timesheetHours,
+    timesheetHours: formatHoursToHHMM(timesheetHours),
+    differenceDecimal: diffDecimal,
+    difference: formatHoursToHHMM(diffDecimal),
+    status,
+    action,
+    hasAttendance: !!attendanceRecord,
+    isMissingClockout,
+    checkIn: attendanceRecord?.checkIn || null,
+    checkOut: attendanceRecord?.checkOut || null,
+  };
 };
 
 const calculateHours = (
@@ -214,6 +287,42 @@ const createTimesheet = async (req, res) => {
         return res.status(400).json({
           success: false,
           message: "Hours must be a number between 0 and 24",
+        });
+      }
+    }
+
+    // -----------------------------
+    // Validate against Clocked Attendance Working Hours
+    // -----------------------------
+    const startOfDay = new Date(workDate);
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const endOfDay = new Date(workDate);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const [attendanceRecord, existingDailyEntries] = await Promise.all([
+      Attendance.findOne({
+        employee: employee._id,
+        date: { $gte: startOfDay, $lte: endOfDay },
+      }),
+      Timesheet.find({
+        employee: employee._id,
+        date: { $gte: startOfDay, $lte: endOfDay },
+      }),
+    ]);
+
+    if (attendanceRecord && attendanceRecord.workingHours > 0) {
+      const existingHoursSum = existingDailyEntries.reduce(
+        (sum, item) => sum + Number(item.hours || 0),
+        0
+      );
+      const newTotalTimesheetHours = Number((existingHoursSum + hours).toFixed(2));
+      const clocked = Number(attendanceRecord.workingHours.toFixed(2));
+
+      if (newTotalTimesheetHours > clocked + 0.25) {
+        return res.status(400).json({
+          success: false,
+          message: `Enterprise Attendance Policy: Total logged timesheet hours (${newTotalTimesheetHours} hrs) cannot exceed your clocked attendance working hours (${clocked} hrs) for ${formatDateKey(workDate)}. Please fill your timesheet according to your actual clocked working time.`,
         });
       }
     }
@@ -505,8 +614,8 @@ const getMyWeek = async (req, res) => {
       end,
     } = getWeekRange(selectedDate);
 
-    const timesheets =
-      await Timesheet.find({
+    const [timesheets, attendanceRecords] = await Promise.all([
+      Timesheet.find({
         employee: employee._id,
         date: {
           $gte: start,
@@ -515,7 +624,15 @@ const getMyWeek = async (req, res) => {
       }).sort({
         date: 1,
         createdAt: 1,
-      });
+      }),
+      Attendance.find({
+        employee: employee._id,
+        date: {
+          $gte: start,
+          $lte: end,
+        },
+      }),
+    ]);
 
     const dailyTotals = [];
 
@@ -550,6 +667,22 @@ const getMyWeek = async (req, res) => {
 
     dailyTotals.forEach((dailyTotal) => {
       dailyTotal.hours = Number(dailyTotal.hours.toFixed(2));
+      const attRecord = attendanceRecords.find(
+        (a) => formatDateKey(new Date(a.date)) === dailyTotal.date
+      );
+      const dayParts = dailyTotal.date.split("-");
+      const dayOfWeek = new Date(
+        parseInt(dayParts[0], 10),
+        parseInt(dayParts[1], 10) - 1,
+        parseInt(dayParts[2], 10)
+      ).getDay();
+      const isWeekendDay = dayOfWeek === 0 || dayOfWeek === 6;
+      const reqHours = isWeekendDay ? 0 : 8.0;
+      dailyTotal.reconciliation = computeReconciliationData(
+        attRecord,
+        dailyTotal.hours,
+        reqHours
+      );
     });
 
     // -----------------------------
@@ -565,6 +698,21 @@ const getMyWeek = async (req, res) => {
 
     const roundedTotal =
       Number(totalHours.toFixed(2));
+
+    const totalClockedWeek = attendanceRecords.reduce(
+      (total, item) => total + Number(item.workingHours || 0),
+      0
+    );
+
+    const weekReconciliation = computeReconciliationData(
+      { workingHours: totalClockedWeek },
+      roundedTotal,
+      40.0
+    );
+
+    const selectedDateKey = formatDateKey(new Date(selectedDate));
+    const selectedDayItem =
+      dailyTotals.find((d) => d.date === selectedDateKey) || dailyTotals[0];
 
     const statusCounts = {
       draft: 0,
@@ -594,6 +742,10 @@ const getMyWeek = async (req, res) => {
         entries,
 
         statusCounts,
+
+        reconciliation: selectedDayItem?.reconciliation || weekReconciliation,
+
+        weekReconciliation,
       },
     });
   } catch (error) {
@@ -603,6 +755,78 @@ const getMyWeek = async (req, res) => {
     );
 
     return res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// =====================================================
+// GET ATTENDANCE RECONCILIATION
+// GET /api/v1/timesheets/reconciliation?date=2026-09-28
+// =====================================================
+
+const getAttendanceReconciliation = async (req, res) => {
+  try {
+    const employee = await getEmployeeByUser(req.user.userId);
+    if (!employee) {
+      return res.status(404).json({
+        success: false,
+        message: "Employee profile not found",
+      });
+    }
+
+    const selectedDateStr = req.query.date || formatDateKey(new Date());
+    const targetDate = new Date(selectedDateStr);
+
+    if (Number.isNaN(targetDate.getTime())) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid date parameter",
+      });
+    }
+
+    const startOfTarget = new Date(targetDate);
+    startOfTarget.setHours(0, 0, 0, 0);
+
+    const endOfTarget = new Date(targetDate);
+    endOfTarget.setHours(23, 59, 59, 999);
+
+    const [timesheets, attendance] = await Promise.all([
+      Timesheet.find({
+        employee: employee._id,
+        date: { $gte: startOfTarget, $lte: endOfTarget },
+      }),
+      Attendance.findOne({
+        employee: employee._id,
+        date: { $gte: startOfTarget, $lte: endOfTarget },
+      }),
+    ]);
+
+    const timesheetHoursSum = timesheets.reduce(
+      (acc, t) => acc + Number(t.hours || 0),
+      0
+    );
+    const dayOfWeek = targetDate.getDay();
+    const isWeekendDay = dayOfWeek === 0 || dayOfWeek === 6;
+    const reqHours = isWeekendDay ? 0 : 8.0;
+
+    const reconciliation = computeReconciliationData(
+      attendance,
+      timesheetHoursSum,
+      reqHours
+    );
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        date: formatDateKey(targetDate),
+        ...reconciliation,
+      },
+    });
+  } catch (error) {
+    console.error("GET ATTENDANCE RECONCILIATION ERROR:", error);
+    return res.status(500).json({
       success: false,
       message: error.message,
     });
@@ -966,6 +1190,42 @@ const updateTimesheet = async (
 
     if (billable !== undefined) {
       timesheet.billable = billable !== false;
+    }
+
+    // -----------------------------
+    // Validate against Clocked Attendance Working Hours
+    // -----------------------------
+    const targetWorkDate = timesheet.date;
+    const startOfDay = new Date(targetWorkDate);
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const endOfDay = new Date(targetWorkDate);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const [attendanceRecord, existingDailyEntries] = await Promise.all([
+      Attendance.findOne({
+        employee: employee._id,
+        date: { $gte: startOfDay, $lte: endOfDay },
+      }),
+      Timesheet.find({
+        employee: employee._id,
+        date: { $gte: startOfDay, $lte: endOfDay },
+      }),
+    ]);
+
+    if (attendanceRecord && attendanceRecord.workingHours > 0) {
+      const existingHoursSum = existingDailyEntries
+        .filter((item) => item._id.toString() !== timesheet._id.toString())
+        .reduce((sum, item) => sum + Number(item.hours || 0), 0);
+      const newTotalTimesheetHours = Number((existingHoursSum + hours).toFixed(2));
+      const clocked = Number(attendanceRecord.workingHours.toFixed(2));
+
+      if (newTotalTimesheetHours > clocked + 0.25) {
+        return res.status(400).json({
+          success: false,
+          message: `Enterprise Attendance Policy: Total logged timesheet hours (${newTotalTimesheetHours} hrs) cannot exceed your clocked attendance working hours (${clocked} hrs) for ${formatDateKey(targetWorkDate)}. Please fill your timesheet according to your actual clocked working time.`,
+        });
+      }
     }
 
     // -----------------------------
@@ -1403,9 +1663,26 @@ const getAllTimesheets = async (
       Timesheet.countDocuments(filter),
     ]);
 
+    const employeeIds = [...new Set(timesheets.map((t) => t.employee?._id).filter(Boolean))];
+    const attendanceRecords = await Attendance.find({
+      employee: { $in: employeeIds },
+    });
+
+    const enrichedTimesheets = timesheets.map((t) => {
+      const obj = t.toObject();
+      const dateKey = formatDateKey(new Date(t.date));
+      const att = attendanceRecords.find(
+        (a) =>
+          a.employee?.toString() === t.employee?._id?.toString() &&
+          formatDateKey(new Date(a.date)) === dateKey
+      );
+      obj.reconciliation = computeReconciliationData(att, obj.hours, 8.0);
+      return obj;
+    });
+
     return res.status(200).json({
       success: true,
-      data: timesheets,
+      data: enrichedTimesheets,
       pagination: {
         page: pageNumber,
         limit: limitNumber,
@@ -1531,6 +1808,7 @@ module.exports = {
   getMyTimesheets,
   getMyWeek,
   getMySummary,
+  getAttendanceReconciliation,
   updateTimesheet,
   deleteTimesheet,
   submitTimesheet,

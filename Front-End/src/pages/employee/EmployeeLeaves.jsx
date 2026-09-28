@@ -5,15 +5,39 @@ import Loader from "../../components/common/Loader";
 import ErrorMessage from "../../components/common/ErrorMessage";
 import { useLeaves } from "../../hooks/useLeaves";
 import { formatDate } from "../../utils/date";
+import WeekdayDatePicker from "../../components/common/WeekdayDatePicker";
 import "../../styles/employee/leaves.css";
+
+function isWeekend(dateStr) {
+  if (!dateStr) return false;
+  const str = String(dateStr).slice(0, 10);
+  const parts = str.split("-");
+  if (parts.length !== 3) return false;
+  const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+  const day = d.getDay();
+  return day === 0 || day === 6; // 0 = Sunday, 6 = Saturday
+}
 
 function calculateDays(start, end) {
   if (!start || !end) return 0;
-  const s = new Date(start);
-  const e = new Date(end);
-  if (isNaN(s.getTime()) || isNaN(e.getTime()) || e < s) return 0;
-  const diffTime = Math.abs(e - s);
-  return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+  const sParts = String(start).slice(0, 10).split("-");
+  const eParts = String(end).slice(0, 10).split("-");
+  if (sParts.length !== 3 || eParts.length !== 3) return 0;
+
+  let current = new Date(parseInt(sParts[0], 10), parseInt(sParts[1], 10) - 1, parseInt(sParts[2], 10));
+  const endDate = new Date(parseInt(eParts[0], 10), parseInt(eParts[1], 10) - 1, parseInt(eParts[2], 10));
+
+  if (isNaN(current.getTime()) || isNaN(endDate.getTime()) || endDate < current) return 0;
+
+  let workingDays = 0;
+  while (current <= endDate) {
+    const dayOfWeek = current.getDay();
+    if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+      workingDays++;
+    }
+    current.setDate(current.getDate() + 1);
+  }
+  return workingDays;
 }
 
 // ----------------------------------------------------------------------------
@@ -616,22 +640,22 @@ function EmployeeLeaves() {
                 <div className="form-row-2col">
                   <div className="form-field-group">
                     <label>Leave Start Date *</label>
-                    <input
-                      type="date"
+                    <WeekdayDatePicker
                       value={leaveForm.startDate}
-                      onChange={(e) => setLeaveForm((prev) => ({ ...prev, startDate: e.target.value }))}
+                      onChange={(val) => setLeaveForm((prev) => ({ ...prev, startDate: val }))}
                       min={new Date().toISOString().slice(0, 10)}
+                      placeholder="Select working start date (Mon-Fri)"
                       required
                     />
                   </div>
 
                   <div className="form-field-group">
                     <label>Leave End Date *</label>
-                    <input
-                      type="date"
+                    <WeekdayDatePicker
                       value={leaveForm.endDate}
-                      onChange={(e) => setLeaveForm((prev) => ({ ...prev, endDate: e.target.value }))}
+                      onChange={(val) => setLeaveForm((prev) => ({ ...prev, endDate: val }))}
                       min={leaveForm.startDate || new Date().toISOString().slice(0, 10)}
+                      placeholder="Select working end date (Mon-Fri)"
                       required
                     />
                   </div>
@@ -757,22 +781,22 @@ function EmployeeLeaves() {
                 <div className="form-row-2col">
                   <div className="form-field-group">
                     <label>Remote Start Date *</label>
-                    <input
-                      type="date"
+                    <WeekdayDatePicker
                       value={wfhForm.startDate}
-                      onChange={(e) => setWfhForm((prev) => ({ ...prev, startDate: e.target.value }))}
+                      onChange={(val) => setWfhForm((prev) => ({ ...prev, startDate: val }))}
                       min={new Date().toISOString().slice(0, 10)}
+                      placeholder="Select working start date (Mon-Fri)"
                       required
                     />
                   </div>
 
                   <div className="form-field-group">
                     <label>Remote End Date *</label>
-                    <input
-                      type="date"
+                    <WeekdayDatePicker
                       value={wfhForm.endDate}
-                      onChange={(e) => setWfhForm((prev) => ({ ...prev, endDate: e.target.value }))}
+                      onChange={(val) => setWfhForm((prev) => ({ ...prev, endDate: val }))}
                       min={wfhForm.startDate || new Date().toISOString().slice(0, 10)}
+                      placeholder="Select working end date (Mon-Fri)"
                       required
                     />
                   </div>
@@ -1224,23 +1248,21 @@ function EmployeeLeaves() {
                 <div className="form-row-2col">
                   <div className="form-field-group">
                     <label>Start Date *</label>
-                    <input
-                      type="date"
-                      name="startDate"
+                    <WeekdayDatePicker
                       value={editingLeave.startDate}
-                      onChange={handleEditFieldChange}
+                      onChange={(val) => setEditingLeave((prev) => ({ ...prev, startDate: val }))}
+                      placeholder="Select working start date"
                       required
                     />
                   </div>
 
                   <div className="form-field-group">
                     <label>End Date *</label>
-                    <input
-                      type="date"
-                      name="endDate"
+                    <WeekdayDatePicker
                       value={editingLeave.endDate}
-                      onChange={handleEditFieldChange}
+                      onChange={(val) => setEditingLeave((prev) => ({ ...prev, endDate: val }))}
                       min={editingLeave.startDate}
+                      placeholder="Select working end date"
                       required
                     />
                   </div>

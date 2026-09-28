@@ -65,13 +65,13 @@ function EmployeeHeader() {
   const dropdownRef = useRef(null);
 
   const [headerPhoto, setHeaderPhoto] = useState(() => {
-    return (
-      employee?.profilePhoto ||
-      user?.profilePhoto ||
-      localStorage.getItem("hrms_profile_photo") ||
-      sessionStorage.getItem("hrms_profile_photo") ||
-      ""
-    );
+    const direct = employee?.profilePhoto || user?.profilePhoto;
+    if (direct && !direct.startsWith("blob:")) return direct;
+    const l = localStorage.getItem("hrms_profile_photo");
+    const s = sessionStorage.getItem("hrms_profile_photo");
+    if (s && !s.startsWith("blob:")) return s;
+    if (l && !l.startsWith("blob:")) return l;
+    return "";
   });
 
   // Sync profile photo on change or fetch from server
@@ -79,10 +79,13 @@ function EmployeeHeader() {
     const directPhoto = employee?.profilePhoto || user?.profilePhoto;
     if (directPhoto) {
       setHeaderPhoto(directPhoto);
-      localStorage.setItem("hrms_profile_photo", directPhoto);
+      if (!directPhoto.startsWith("blob:")) {
+        localStorage.setItem("hrms_profile_photo", directPhoto);
+        sessionStorage.setItem("hrms_profile_photo", directPhoto);
+      }
     } else {
       const stored = localStorage.getItem("hrms_profile_photo") || sessionStorage.getItem("hrms_profile_photo");
-      if (stored) {
+      if (stored && !stored.startsWith("blob:")) {
         setHeaderPhoto(stored);
       } else {
         let isMounted = true;
@@ -91,7 +94,7 @@ function EmployeeHeader() {
             if (!isMounted) return;
             const empData = res?.employee || res?.data?.employee || res?.user || res;
             const photo = empData?.profilePhoto;
-            if (photo) {
+            if (photo && !photo.startsWith("blob:")) {
               setHeaderPhoto(photo);
               localStorage.setItem("hrms_profile_photo", photo);
               sessionStorage.setItem("hrms_profile_photo", photo);
@@ -224,6 +227,20 @@ function EmployeeHeader() {
 
     return [
       ...docNotifications,
+      {
+        id: "sys-att-corr",
+        title: "⏱️ HR Attendance Correction",
+        desc: "HR resolved missing clock-out and updated check-out to 06:30 PM IST.",
+        time: "Just now",
+        link: "/employee/timesheets",
+      },
+      {
+        id: "sys-res-update",
+        title: "🚪 Resignation Status Update",
+        desc: "Your resignation request has been reviewed by HR. Please check the portal.",
+        time: "Recently",
+        link: "/employee/resignation",
+      },
       {
         id: "sys-1",
         title: "Payroll Statement Verified",
@@ -431,6 +448,9 @@ function EmployeeHeader() {
                 alt={displayName}
                 className="header-avatar-img"
                 onError={(e) => {
+                  localStorage.removeItem("hrms_profile_photo");
+                  sessionStorage.removeItem("hrms_profile_photo");
+                  setHeaderPhoto("");
                   e.currentTarget.style.display = "none";
                   const fallback = e.currentTarget.nextElementSibling;
                   if (fallback) fallback.style.display = "flex";
